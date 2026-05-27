@@ -48,6 +48,7 @@
 
 #if TARGET_PC
 #include <SDL3/SDL_video.h>
+#include <aurora/aurora.h>
 #include "aurora/lib/window.hpp"
 #include "d/actor/d_a_horse.h"
 #include "dusk/dusk.h"
@@ -2082,7 +2083,14 @@ static void drawItem3D() {
     setLight();
     j3dSys.setViewMtx(item_mtx);
     GXSetClipMode(GX_CLIP_DISABLE);
+#if TARGET_PC
+    // VR: world-lock the 3D menu models (Link / item models) onto the menu panel using the item view.
+    aurora_xr_set_item3d_view(&item_mtx[0][0]);
+#endif
     dComIfGd_drawListItem3d();
+#if TARGET_PC
+    aurora_xr_set_item3d_view(nullptr);
+#endif
     GXSetClipMode(GX_CLIP_ENABLE);
     j3dSys.reinitGX();
 }
@@ -2672,6 +2680,14 @@ int mDoGph_Painter() {
     captureScreenSetPort();
     #endif
 
+#if TARGET_PC
+    // VR: world-lock the full-screen menus (pause/item/map/save) so the head can look around them;
+    // the in-game HUD (hearts/rupees/buttons, drawn when no menu is up) keeps its head-locked float.
+    aurora_xr_set_hud_layer((dComIfGp_isPauseFlag() || dComIfGp_getWindowNum() != 0)
+                                ? AURORA_XR_HUD_LAYER_MENU
+                                : AURORA_XR_HUD_LAYER_HUD);
+#endif
+
     if (fapGmHIO_get2Ddraw()) {
         Mtx m4;
         cMtx_copy(j3dSys.getViewMtx(), m4);
@@ -2728,6 +2744,10 @@ int mDoGph_Painter() {
         dComIfGd_draw2DOpaTop();
         dComIfGd_draw2DXlu();
     }
+
+#if TARGET_PC
+    aurora_xr_set_hud_layer(AURORA_XR_HUD_LAYER_HUD); // back to default for any later 2D
+#endif
 
     #if DEBUG
     if (dJcame_c::get()) {

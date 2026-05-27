@@ -9,6 +9,7 @@
 #include <cstring>
 
 #if TARGET_PC
+#include <aurora/aurora.h>
 #include "dusk/settings.h"
 #endif
 
@@ -76,6 +77,8 @@ void dMsgScrnBase_c::draw() {
     if (dusk::getSettings().game.recordingMode) {
         return;
     }
+    // VR: speech boxes / subtitles float head-locked but smaller + closer than the gameplay HUD.
+    aurora_xr_set_hud_layer(AURORA_XR_HUD_LAYER_MESSAGE);
 #endif
     J2DGrafContext* ctx = dComIfGp_getCurrentGrafPort();
 
@@ -83,6 +86,9 @@ void dMsgScrnBase_c::draw() {
     mpScreen->draw(0.0f, 0.0f, ctx);
     drawSelf();
     ctx->setup2D();
+#if TARGET_PC
+    aurora_xr_set_hud_layer(AURORA_XR_HUD_LAYER_HUD);
+#endif
 }
 
 void dMsgScrnBase_c::drawSelf() {
