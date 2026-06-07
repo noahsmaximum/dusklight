@@ -22,16 +22,28 @@ So suppression must be applied **per source/category**, not globally.
 
 ## Categories & status
 
-- [x] **Present-demo gets** (`daDitem_c`, `src/d/actor/d_a_demo_item.cpp`) — chests and
-      most story/NPC "hold-up" gifts. Gated at the `execItemGet` in `actionEvent()`.
-- [ ] Freestanding field items (`d_a_obj_item`) — `execItemGet(m_itemNo)`; suppress only
-      randomized instances.
-- [ ] `d_a_demo00` special gets (e.g. case 3).
-- [ ] Dungeon items: small keys, big key, map, compass.
-- [ ] Heart pieces / containers.
-- [ ] Poes, Golden Bugs, Sky characters, Hidden skills (golden wolves).
-- [ ] Shop items.
-- [ ] Boss rewards, fishing, minigame rewards, NPC quest items.
+- [x] **Present-demo gets** (`daDitem_c::actionEvent`, `d_a_demo_item.cpp`). This actor
+      is created by BOTH `fopAcM_createItemForTrBoxDemo` and
+      `fopAcM_createItemForPresentDemo`, so gating its `execItemGet` covers a huge set:
+      **chests, small keys, heart pieces/containers, poe souls, sky-character book
+      upgrades, in-chest map/compass/boss keys, boss heart containers, and story/NPC
+      hold-up gifts.** Each source sets its own check flag (`onTbox`/`onItem`/event)
+      separately, so the check still registers.
+- [x] Freestanding field items (`d_a_obj_item::itemGet`) — gated when the instance is
+      tracked (`mItemBitNo != 0xFF`); environmental/respawning drops (0xFF) are left
+      intact. The pickup flag (`fopAcM_onItem`) is set by `itemGetNextExecute`, so the
+      check still registers.
+- [x] Fishing-hole heart piece (`d_a_mg_rod`) — direct `execItemGet(KAKERA_HEART)` gated;
+      `onItem` flag + fishing event reg kept.
+- [ ] `d_a_demo00` case 3 = the **Master Sword** (`0x29`) get demo. LEFT as a vanilla
+      give on purpose: it's progression-critical and the check flag may BE the
+      `onItemFirstBit` that `execItemGet` sets, so blind suppression risks a softlock.
+      Needs the apworld's location-flag confirmed before gating.
+- [ ] Golden bugs — no direct `execItemGet` found; assumed present-demo path (verify).
+- [ ] Hidden skills (golden wolves / Hero's Shade) — event-bit based, no separate vanilla
+      item; AP delivers the progressive skill. Verify the location flag isn't the same
+      bit the AP grant sets (false-check risk, as resolved for the Sky Book).
+- [ ] Shop items, minigame rewards — direct grants tied to payment/score; defer.
 
 ## Per-category procedure
 

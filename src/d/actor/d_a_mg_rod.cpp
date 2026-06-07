@@ -27,6 +27,7 @@
 
 #if TARGET_PC
 #include "dusk/settings.h"
+#include "dusk/archipelago.h"
 #include "dusk/version.hpp"
 #endif
 
@@ -2910,8 +2911,11 @@ static void lure_heart(dmg_rod_class* i_this) {
 
             if (obj_life != NULL) {
                 fopAcM_delete(obj_life);
-                fopAcM_onItem(obj_life, 0x80);
-                execItemGet(dItemNo_KAKERA_HEART_e);
+                fopAcM_onItem(obj_life, 0x80);  // location check flag (kept for AP)
+                // Archipelago: suppress the vanilla heart piece; the client delivers it.
+                if (!dusk::archipelago::randoActive()) {
+                    execItemGet(dItemNo_KAKERA_HEART_e);
+                }
                 u8 eventReg = dComIfGs_getEventReg(0xECFF);
                 eventReg |= (u8)0x40;
                 dComIfGs_setEventReg(0xECFF, eventReg);

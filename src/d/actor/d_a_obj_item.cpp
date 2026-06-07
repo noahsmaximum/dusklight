@@ -12,6 +12,7 @@
 #include "d/d_com_inf_game.h"
 #include "d/d_item.h"
 #include "d/d_item_data.h"
+#include "dusk/archipelago.h"
 #include "d/d_s_play.h"
 #include "f_op/f_op_camera_mng.h"
 #include "m_Do/m_Do_mtx.h"
@@ -877,6 +878,13 @@ void daItem_c::itemGetNextExecute() {
 }
 
 void daItem_c::itemGet() {
+    // Archipelago: tracked (collect-once) item placements have their pickup flag set by
+    // itemGetNextExecute (fopAcM_onItem, after this returns), which registers the AP
+    // location check. Suppress the vanilla item here so the client delivers the real
+    // one. Untracked environmental drops (mItemBitNo == 0xFF) are left intact.
+    if (mItemBitNo != 0xFF && dusk::archipelago::randoActive()) {
+        return;
+    }
     switch (m_itemNo) {
     case dItemNo_HEART_e:
         mDoAud_seStart(Z2SE_HEART_PIECE_GET, NULL, 0, 0);
