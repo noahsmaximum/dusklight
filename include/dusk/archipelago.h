@@ -20,4 +20,9 @@ bool isListening();
 bool isClientConnected();
 int  listenPort();
 
+// True when a randomizer client is connected, i.e. the game should run in
+// fully-remote mode: locations register their check but suppress their vanilla
+// item-give, and all items are delivered by the client via execItemGet.
+bool randoActive();
+
 }  // namespace dusk::archipelago

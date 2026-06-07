@@ -251,5 +251,6 @@ void shutdown() {
 bool isListening()       { return g_listen != INVALID_SOCKET; }
 bool isClientConnected() { return g_client != INVALID_SOCKET; }
 int  listenPort()        { return g_port; }
+bool randoActive()       { return g_client != INVALID_SOCKET; }
 
 }  // namespace dusk::archipelago

@@ -8,6 +8,7 @@
 #include "d/actor/d_a_demo_item.h"
 #include "d/d_com_inf_game.h"
 #include "d/d_item.h"
+#include "dusk/archipelago.h"
 #include "d/d_item_data.h"
 #include "d/d_a_itembase_static.h"
 #include "d/actor/d_a_player.h"
@@ -170,7 +171,12 @@ void daDitem_c::actionEvent() {
 
     if (chkDead()) {
         if (!chkArgFlag(0x1)) {
-            execItemGet(m_itemNo);
+            // Archipelago: in fully-remote mode the present demo still plays, but the
+            // vanilla location item is suppressed - the AP client delivers the real
+            // item. Environmental drops use other actors and are unaffected.
+            if (!dusk::archipelago::randoActive()) {
+                execItemGet(m_itemNo);
+            }
         }
 
         if (m_itemNo == dItemNo_KAKERA_HEART_e) {
