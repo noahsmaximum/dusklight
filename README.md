@@ -34,7 +34,7 @@ replacing the GameCube REL + `dolphin_memory_engine` approach used for the emula
 
 ### Using it
 
-1. **Build** this branch from source (see [Building](#building) below) — the AP module is compiled in automatically.
+1. **Get the AP-enabled build** — download it from [Releases](../../releases), or build this branch from source (see [Building](#building); the AP module is compiled in automatically).
 2. **Run** Dusklight with your disc and **load your save**:
    ```
    dusklight --dvd "path/to/Twilight Princess (USA).rvz"
