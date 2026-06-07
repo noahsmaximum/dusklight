@@ -35,9 +35,10 @@
 #include <string>
 
 #include "dusk/archipelago.h"
-#include "d/d_save.h"             // dSv_info_c
-#include "d/d_com_inf_game.h"     // dComIfGs_getSaveInfo()
+#include "d/d_save.h"             // dSv_info_c, dSv_memBit_c, dSv_event_flag_c
+#include "d/d_com_inf_game.h"     // dComIfGs_getSaveInfo(), dComIfGp_getStageStagInfo()
 #include "d/d_item.h"             // execItemGet()
+#include "d/d_stage.h"            // dStage_SaveTbl, dStage_stagInfo_GetSaveTbl()
 
 namespace dusk::archipelago {
 
@@ -70,10 +71,130 @@ bool safeToGive() {
     return dComIfGp_getPlayer(0) != nullptr && !dComIfGp_event_runCheck();
 }
 
-// Grant a TP item by id. item ids match the apworld ITEM_TABLE (dItemNo_*), i.e.
-// indices into the decomp's item_func table that execItemGet() dispatches.
+// ---------------------------------------------------------------------------
+// Per-dungeon item delivery
+//
+// The apworld's item_id is the zsrtp-randomizer id, which is NOT always a base-game
+// dItemNo. Most ids coincide (rupees, ammo, equipment, bottles, bugs) and are
+// granted fine by execItemGet(). But per-dungeon DUNGEON ITEMS use rando ids that
+// the base game maps to item_func_noentry (does nothing) -- this is why only rupees
+// arrived in early testing. They must instead be applied directly to the target
+// dungeon's saved memory-bit block:
+//   small keys 0x85-0x8D, big/boss keys 0x92-0x98,
+//   compasses 0x99/0x9A/0x9B + 0xA8-0xAD, maps 0xB6-0xBE.
+// Mapping derived from ap/worlds/twilight_princess_dusklight/Items.py.
+
+// The 9 main dungeons in apworld order (Forest..Hyrule Castle) -> dStage save-table
+// index. LV1..LV9 == 16..24.
+constexpr int kDungeonSaveTbl[9] = {
+    dStage_SaveTbl_LV1, dStage_SaveTbl_LV2, dStage_SaveTbl_LV3,
+    dStage_SaveTbl_LV4, dStage_SaveTbl_LV5, dStage_SaveTbl_LV6,
+    dStage_SaveTbl_LV7, dStage_SaveTbl_LV8, dStage_SaveTbl_LV9,
+};
+
+// Apply fn to a dungeon's memory-bit block. If the player is currently inside that
+// dungeon we mutate the live working copy (which the game persists into mSave on
+// stage exit); otherwise we mutate the persistent per-stage copy (which the game
+// loads into the live copy when the player next enters). Either way a received
+// key/map/compass/boss-key lands correctly wherever the player is when AP delivers.
+template <typename F>
+void withDungeonBit(int dungeonIdx, F&& fn) {
+    if (dungeonIdx < 0 || dungeonIdx >= 9) return;
+    dSv_info_c* info = dComIfGs_getSaveInfo();
+    if (!info) return;
+    int saveTbl = kDungeonSaveTbl[dungeonIdx];
+    stage_stag_info_class* si = dComIfGp_getStageStagInfo();
+    if (si && dStage_stagInfo_GetSaveTbl(si) == saveTbl) {
+        fn(info->getMemory().getBit());                     // live (in this dungeon)
+    } else {
+        fn(info->getSavedata().getSave(saveTbl).getBit());  // persistent
+    }
+}
+
+// Returns true if id was a per-dungeon item we applied directly (so the caller must
+// NOT also run execItemGet, which would hit item_func_noentry).
+bool grantDungeonItem(u8 id) {
+    // Small keys: 0x85..0x8D == Forest..Hyrule Castle; each grant adds one key.
+    if (id >= 0x85 && id <= 0x8D) {
+        withDungeonBit(id - 0x85, [](dSv_memBit_c& b) { b.setKeyNum(b.getKeyNum() + 1); });
+        return true;
+    }
+    // Maps: 0xB6..0xBE == Forest..Hyrule Castle.
+    if (id >= 0xB6 && id <= 0xBE) {
+        withDungeonBit(id - 0xB6, [](dSv_memBit_c& b) { b.onDungeonItemMap(); });
+        return true;
+    }
+    // Big/boss keys (only the 7 dungeons that use a standard boss key; Goron Mines
+    // uses key shards and Snowpeak the Bedroom Key, both real item_funcs).
+    switch (id) {
+        case 0x92: withDungeonBit(0, [](dSv_memBit_c& b) { b.onDungeonItemBossKey(); }); return true; // Forest
+        case 0x93: withDungeonBit(2, [](dSv_memBit_c& b) { b.onDungeonItemBossKey(); }); return true; // Lakebed
+        case 0x94: withDungeonBit(3, [](dSv_memBit_c& b) { b.onDungeonItemBossKey(); }); return true; // Arbiters
+        case 0x95: withDungeonBit(5, [](dSv_memBit_c& b) { b.onDungeonItemBossKey(); }); return true; // Temple of Time
+        case 0x96: withDungeonBit(6, [](dSv_memBit_c& b) { b.onDungeonItemBossKey(); }); return true; // City in the Sky
+        case 0x97: withDungeonBit(7, [](dSv_memBit_c& b) { b.onDungeonItemBossKey(); }); return true; // Palace of Twilight
+        case 0x98: withDungeonBit(8, [](dSv_memBit_c& b) { b.onDungeonItemBossKey(); }); return true; // Hyrule Castle
+        default: break;
+    }
+    // Compasses: 0x99/0x9A/0x9B then 0xA8..0xAD == Forest..Hyrule Castle.
+    switch (id) {
+        case 0x99: withDungeonBit(0, [](dSv_memBit_c& b) { b.onDungeonItemCompass(); }); return true;
+        case 0x9A: withDungeonBit(1, [](dSv_memBit_c& b) { b.onDungeonItemCompass(); }); return true;
+        case 0x9B: withDungeonBit(2, [](dSv_memBit_c& b) { b.onDungeonItemCompass(); }); return true;
+        case 0xA8: withDungeonBit(3, [](dSv_memBit_c& b) { b.onDungeonItemCompass(); }); return true;
+        case 0xA9: withDungeonBit(4, [](dSv_memBit_c& b) { b.onDungeonItemCompass(); }); return true;
+        case 0xAA: withDungeonBit(5, [](dSv_memBit_c& b) { b.onDungeonItemCompass(); }); return true;
+        case 0xAB: withDungeonBit(6, [](dSv_memBit_c& b) { b.onDungeonItemCompass(); }); return true;
+        case 0xAC: withDungeonBit(7, [](dSv_memBit_c& b) { b.onDungeonItemCompass(); }); return true;
+        case 0xAD: withDungeonBit(8, [](dSv_memBit_c& b) { b.onDungeonItemCompass(); }); return true;
+        default: break;
+    }
+    return false;
+}
+
+// Hidden-skill event flags in apworld progressive order (same set ImGuiSaveEditor
+// uses). Each "Progressive Hidden Skill" grant learns the next unlearned skill.
+const u16 kHiddenSkillFlags[7] = {
+    dSv_event_flag_c::F_0339, dSv_event_flag_c::F_0338, dSv_event_flag_c::F_0340,
+    dSv_event_flag_c::F_0341, dSv_event_flag_c::F_0342, dSv_event_flag_c::F_0343,
+    dSv_event_flag_c::F_0344,
+};
+
+// Story progressives whose base id maps to item_func_noentry. Returns true if handled.
+bool grantProgressive(u8 id) {
+    switch (id) {
+        case 0xD8:  // Progressive Fused Shadow (3) -> collect next crystal
+            for (u8 i = 0; i < 3; ++i) {
+                if (!dComIfGs_isCollectCrystal(i)) { dComIfGs_onCollectCrystal(i); break; }
+            }
+            return true;
+        case 0xE1:  // Progressive Hidden Skill (7) -> learn next skill
+            for (u16 f : kHiddenSkillFlags) {
+                if (!dComIfGs_isEventBit(f)) { dComIfGs_onEventBit(f); break; }
+            }
+            return true;
+        default:
+            return false;
+    }
+}
+
+// Grant a TP item by id (see Items.py ITEM_TABLE):
+//  - per-dungeon dungeon items   -> applied to the target dungeon's save block;
+//  - fused shadows / hidden skills -> applied as progressives;
+//  - everything else             -> execItemGet() (the decomp's normal dispatch).
+// The id is logged so the queue drain is self-diagnosing in the console.
+//
+// TODO(rando): other zsrtp progressives still pass a fixed id to execItemGet, so they
+// grant the SAME tier each time instead of escalating -- Master Sword 0x29, Wallet
+// 0x36, Bow 0x43, Clawshot 0x44 (never reaches Double Clawshot!), Dominion Rod 0x46,
+// Fishing Rod 0x4A, Bomb Bag 0x51, Mirror Shard 0xA5, Sky Book 0xE9. Also verify the
+// stub item_funcs: Hylian Shield 0x2C / Ordon Shield 0x2B are empty, and Shadow
+// Crystal 0x32 maps to item_func_MAGIC_LV1. Handle these next.
 void grantItem(u8 itemId) {
     if (itemId == 0x00) return;
+    std::printf("[AP] grant id=0x%02X\n", itemId);
+    if (grantDungeonItem(itemId)) return;
+    if (grantProgressive(itemId)) return;
     execItemGet(itemId);
 }
 
