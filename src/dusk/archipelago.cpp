@@ -192,6 +192,30 @@ bool grantProgressive(u8 id) {
                 if (!dComIfGs_isEventBit(f)) { dComIfGs_onEventBit(f); break; }
             }
             return true;
+        case 0xE9: {  // Progressive Sky Book (7): Ancient Sky Book + 6 sky characters.
+            // Tier 1 = the book; tiers 2..7 set the sky-character EVENT bits (the same
+            // ones the owl-statue cutscene sets, see d_a_tag_statue_evt l_event_bit).
+            // These are distinct from the "Owl Statue Sky Character" LOCATION flags
+            // (those are region/area flags), so this won't false-trigger checks. The
+            // 6th character completes the book (F_0796 + the filled-book item).
+            if (!dComIfGs_isItemFirstBit(0xE9)) { execItemGet(0xE9); return true; }  // book
+            static const u16 kSkyChars[6] = {
+                dSv_event_flag_c::F_0791, dSv_event_flag_c::F_0792, dSv_event_flag_c::F_0793,
+                dSv_event_flag_c::F_0794, dSv_event_flag_c::F_0795, dSv_event_flag_c::F_0812,
+            };
+            int n = 0;
+            for (u16 f : kSkyChars) if (dComIfGs_isEventBit(f)) ++n;
+            if (n < 6) {
+                dComIfGs_onEventBit(kSkyChars[n]);
+                if (n == 5) {                              // 6th character -> book complete
+                    dComIfGs_onEventBit(dSv_event_flag_c::F_0796);
+                    execItemGet(0xEB);                     // ANCIENT_DOCUMENT2 (filled book)
+                } else {
+                    execItemGet(0xEA);                     // AIR_LETTER (partial book)
+                }
+            }
+            return true;
+        }
         default:
             return false;
     }
@@ -207,11 +231,10 @@ bool grantProgressive(u8 id) {
 // "playable as-is" because tier 1 already grants a working item, they just don't reach
 // higher tiers: Master Sword 0x29 (-> always Master, skips Ordon; fine), Bow 0x43
 // (quiver never grows past 30), Dominion Rod 0x46 (gives charged rod; fine), Fishing
-// Rod 0x4A, Bomb Bag 0x51 (extra bomb-type bags). Still BROKEN: Sky Book 0xE9 -- the
-// 6 sky characters aren't granted (item_func only swaps the SLOT_22 display
-// ANCIENT_DOCUMENT->AIR_LETTER->ANCIENT_DOCUMENT2); needs the character storage / Shad
-// gate flags. Stubs to verify: Hylian Shield 0x2C / Ordon Shield 0x2B (empty funcs),
-// Giant Bomb Bag 0x4F (empty), Shadow Crystal 0x32 (-> MAGIC_LV1).
+// Rod 0x4A, Bomb Bag 0x51 (extra bomb-type bags). Stubs to verify: Hylian Shield 0x2C
+// / Ordon Shield 0x2B (empty funcs), Giant Bomb Bag 0x4F (empty), Shadow Crystal 0x32
+// (-> MAGIC_LV1). Sky Book 0xE9 is handled in grantProgressive but the full Shad ->
+// Sky Cannon -> City in the Sky flow is untested at endgame.
 void grantItem(u8 itemId) {
     if (itemId == 0x00) return;
     std::printf("[AP] grant id=0x%02X\n", itemId);

@@ -60,13 +60,15 @@ base-game `dItemNo`:
   `0x44` (single → Double Clawshots `0x47`), Wallet `0x36` (normal→big→giant via
   `setWalletSize`), Mirror Shard `0xA5` (`onCollectMirror` bits 0..3 in order —
   `getMirrorNum()` counts them consecutively; the `MIRROR_PIECE_*` funcs are stubs),
-  Fused Shadow `0xD8` (`onCollectCrystal`), Hidden Skill `0xE1` (event flags).
+  Fused Shadow `0xD8` (`onCollectCrystal`), Hidden Skill `0xE1` (event flags), Sky Book
+  `0xE9` (the book, then the 6 sky-character event bits `F_0791`..`F_0795`/`F_0812`; the
+  6th sets `F_0796` + the filled-book item — these event bits are distinct from the
+  `Region`-type "Owl Statue Sky Character" location flags, so no false checks).
 
 ### Delivery TODO — remaining progressives / stubs
 
-- Still BROKEN: Sky Book `0xE9` — the 6 sky characters aren't granted (the item_func
-  only swaps the SLOT_22 display `ANCIENT_DOCUMENT`→`AIR_LETTER`→`ANCIENT_DOCUMENT2`);
-  needs the sky-character storage / Shad gate flags.
+- Sky Book `0xE9` is handled, but the full in-game Shad → Sky Cannon → City in the Sky
+  flow is untested at endgame (verify when someone reaches it).
 - Playable as-is but don't reach higher tiers: Master Sword `0x29` (always Master,
   skips Ordon), Bow `0x43` (quiver stays 30), Dominion Rod `0x46` (gives charged rod),
   Fishing Rod `0x4A`, Bomb Bag `0x51` (extra bomb-type bags).
