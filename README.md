@@ -8,6 +8,49 @@
   </p>
 </div>
 
+# 🎲 Archipelago multiworld support (unofficial fork)
+
+This is an **unofficial fork** of [TwilitRealm/dusklight](https://github.com/TwilitRealm/dusklight) that adds native
+[Archipelago](https://archipelago.gg) multiworld randomizer support to the Twilight Princess PC port. All credit for
+Dusklight itself belongs to the TwilitRealm team — see the original README below. The Archipelago code lives on the
+**[`dusklight-Archipelago`](https://github.com/noahsmaximum/dusklight/tree/dusklight-Archipelago)** branch.
+
+### What this adds
+
+A native `dusk::archipelago` module (`src/dusk/archipelago.cpp`) that is the in-game side of the randomizer,
+replacing the GameCube REL + `dolphin_memory_engine` approach used for the emulated (Dolphin) version:
+
+- Hosts a localhost TCP server on **`127.0.0.1:17354`** for the Archipelago client.
+- Exposes a read/write window over the live save (`dSv_info_c`) so the client can read location flags, current stage, health, etc.
+- Grants received items in-game via the decomp's own `execItemGet()`, gated so it never fires mid-cutscene.
+- Adds an **Archipelago** status panel under the in-game **Tools** menu.
+
+### The two halves
+
+| Repo | Role |
+|------|------|
+| **this repo** (native fork) | the game + the in-game AP bridge |
+| [noahsmaximum/Dusklight-Archipelago](https://github.com/noahsmaximum/Dusklight-Archipelago) | the Archipelago client / world (seed generation, server, item & location logic) |
+
+### Using it
+
+1. **Build** this branch from source (see [Building](#building) below) — the AP module is compiled in automatically.
+2. **Run** Dusklight with your disc and **load your save**:
+   ```
+   dusklight --dvd "path/to/Twilight Princess (USA).rvz"
+   ```
+   The bridge starts listening on `127.0.0.1:17354`; check **Tools → Archipelago** for status.
+3. Generate a seed, host a server, and run the client from the
+   [Archipelago world repo](https://github.com/noahsmaximum/Dusklight-Archipelago) (full instructions there), then connect.
+
+> **Note:** your Archipelago slot name must match your in-game Twilight Princess **save file name**.
+>
+> ⚠️ Tested on the **GameCube USA (GZ2E01)** version on Windows.
+
+---
+
+*Original Dusklight README below.*
+
 # Overview
 
 Dusklight is a reverse-engineered reimplementation of Twilight Princess.
