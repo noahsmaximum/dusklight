@@ -161,9 +161,27 @@ const u16 kHiddenSkillFlags[7] = {
     dSv_event_flag_c::F_0344,
 };
 
-// Story progressives whose base id maps to item_func_noentry. Returns true if handled.
+// Progressive items: the apworld sends ONE id per copy, so a flat execItemGet would
+// grant the same tier every time (and several base funcs are stubs / noentry).
+// Escalate based on current save state instead. Returns true if handled.
 bool grantProgressive(u8 id) {
     switch (id) {
+        case 0x44:  // Progressive Clawshot (2): Clawshot -> Double Clawshots
+            if (!dComIfGs_isItemFirstBit(0x44)) execItemGet(0x44);  // single clawshot
+            else execItemGet(0x47);                                  // double (W_HOOKSHOT)
+            return true;
+        case 0x36: {  // Progressive Wallet (2): normal -> big -> giant
+            u8 w = dComIfGs_getWalletSize();
+            if (w < GIANT_WALLET) dComIfGs_setWalletSize(static_cast<u8>(w + 1));
+            return true;
+        }
+        case 0xA5:  // Progressive Mirror Shard (4): MIRROR_PIECE_* funcs are stubs, so
+                    // set the pieces directly. getMirrorNum() counts bits 0..3
+                    // consecutively, so fill them in order.
+            for (u8 i = 0; i < 4; ++i) {
+                if (!dComIfGs_isCollectMirror(i)) { dComIfGs_onCollectMirror(i); break; }
+            }
+            return true;
         case 0xD8:  // Progressive Fused Shadow (3) -> collect next crystal
             for (u8 i = 0; i < 3; ++i) {
                 if (!dComIfGs_isCollectCrystal(i)) { dComIfGs_onCollectCrystal(i); break; }
@@ -185,12 +203,15 @@ bool grantProgressive(u8 id) {
 //  - everything else             -> execItemGet() (the decomp's normal dispatch).
 // The id is logged so the queue drain is self-diagnosing in the console.
 //
-// TODO(rando): other zsrtp progressives still pass a fixed id to execItemGet, so they
-// grant the SAME tier each time instead of escalating -- Master Sword 0x29, Wallet
-// 0x36, Bow 0x43, Clawshot 0x44 (never reaches Double Clawshot!), Dominion Rod 0x46,
-// Fishing Rod 0x4A, Bomb Bag 0x51, Mirror Shard 0xA5, Sky Book 0xE9. Also verify the
-// stub item_funcs: Hylian Shield 0x2C / Ordon Shield 0x2B are empty, and Shadow
-// Crystal 0x32 maps to item_func_MAGIC_LV1. Handle these next.
+// TODO(rando): remaining progressives still pass a fixed id to execItemGet. These are
+// "playable as-is" because tier 1 already grants a working item, they just don't reach
+// higher tiers: Master Sword 0x29 (-> always Master, skips Ordon; fine), Bow 0x43
+// (quiver never grows past 30), Dominion Rod 0x46 (gives charged rod; fine), Fishing
+// Rod 0x4A, Bomb Bag 0x51 (extra bomb-type bags). Still BROKEN: Sky Book 0xE9 -- the
+// 6 sky characters aren't granted (item_func only swaps the SLOT_22 display
+// ANCIENT_DOCUMENT->AIR_LETTER->ANCIENT_DOCUMENT2); needs the character storage / Shad
+// gate flags. Stubs to verify: Hylian Shield 0x2C / Ordon Shield 0x2B (empty funcs),
+// Giant Bomb Bag 0x4F (empty), Shadow Crystal 0x32 (-> MAGIC_LV1).
 void grantItem(u8 itemId) {
     if (itemId == 0x00) return;
     std::printf("[AP] grant id=0x%02X\n", itemId);

@@ -56,19 +56,22 @@ base-game `dItemNo`:
   (`getSave(dStage_SaveTbl_LVn)` persistent, or live `getMemory()` if the player is
   in that dungeon): small keys `0x85-0x8D`, big/boss keys `0x92-0x98`, compasses
   `0x99/0x9A/0x9B + 0xA8-0xAD`, maps `0xB6-0xBE`.
-- **Simple progressives** that also hit `noentry` are handled in `grantProgressive()`:
+- **Progressives** handled in `grantProgressive()` (escalate by save state): Clawshot
+  `0x44` (single → Double Clawshots `0x47`), Wallet `0x36` (normal→big→giant via
+  `setWalletSize`), Mirror Shard `0xA5` (`onCollectMirror` bits 0..3 in order —
+  `getMirrorNum()` counts them consecutively; the `MIRROR_PIECE_*` funcs are stubs),
   Fused Shadow `0xD8` (`onCollectCrystal`), Hidden Skill `0xE1` (event flags).
 
-### Delivery TODO — other progressives still grant a fixed tier each time
+### Delivery TODO — remaining progressives / stubs
 
-These pass a constant id to `execItemGet`, so they don't escalate. Need state-aware
-handling (give the next tier based on what's already owned):
-
-- Master Sword `0x29`, Wallet `0x36`, Hero's Bow `0x43`, **Clawshot `0x44` (never
-  reaches Double Clawshot — progression risk!)**, Dominion Rod `0x46`, Fishing Rod
-  `0x4A`, Bomb Bag `0x51`, Mirror Shard `0xA5`, Sky Book `0xE9`.
-- Verify stubs: Hylian Shield `0x2C` / Ordon Shield `0x2B` `item_func`s are empty;
-  Shadow Crystal `0x32` maps to `item_func_MAGIC_LV1`.
+- Still BROKEN: Sky Book `0xE9` — the 6 sky characters aren't granted (the item_func
+  only swaps the SLOT_22 display `ANCIENT_DOCUMENT`→`AIR_LETTER`→`ANCIENT_DOCUMENT2`);
+  needs the sky-character storage / Shad gate flags.
+- Playable as-is but don't reach higher tiers: Master Sword `0x29` (always Master,
+  skips Ordon), Bow `0x43` (quiver stays 30), Dominion Rod `0x46` (gives charged rod),
+  Fishing Rod `0x4A`, Bomb Bag `0x51` (extra bomb-type bags).
+- Empty `item_func` stubs to verify: Hylian Shield `0x2C` / Ordon Shield `0x2B`, Giant
+  Bomb Bag `0x4F`; Shadow Crystal `0x32` → `item_func_MAGIC_LV1`.
 - Oddball keys still on `execItemGet`/`noentry`: Bulblin Camp `0x8E`, Gate Keys
   `0xF3`, Goron Key Shards `0xF9`, Ordon Pumpkin/Cheese `0xF4`/`0xF5`.
 
