@@ -20,6 +20,7 @@
 #else
     #include <sys/socket.h>
     #include <netinet/in.h>
+    #include <netinet/tcp.h>
     #include <arpa/inet.h>
     #include <unistd.h>
     #include <fcntl.h>
@@ -237,7 +238,21 @@ void sendLine(const std::string& s) {
     if (g_client == INVALID_SOCKET) return;
     std::string out = s;
     out.push_back('\n');
-    send(g_client, out.data(), static_cast<int>(out.size()), 0);
+    // Reliable send: the socket is non-blocking and responses can be several KB
+    // (the client snapshots the whole dSv_info_c window in one READ), so a single
+    // send() may not flush everything. Loop on partial sends; on a full send buffer
+    // (wouldBlock) spin briefly, but bail after a bounded number of retries so a
+    // stalled client can never freeze the game's frame thread.
+    size_t sent = 0;
+    int spins = 0;
+    while (sent < out.size()) {
+        int n = send(g_client, out.data() + sent, static_cast<int>(out.size() - sent), 0);
+        if (n > 0) { sent += static_cast<size_t>(n); spins = 0; continue; }
+        if (n < 0 && wouldBlock() && ++spins < 100000) continue;  // buffer full, retry
+        closeSocket(g_client);                                    // hard error / stuck
+        g_client = INVALID_SOCKET;
+        return;
+    }
 }
 
 void handleCommand(const std::string& line) {
@@ -334,6 +349,8 @@ void update() {
         socket_t c = accept(g_listen, nullptr, nullptr);
         if (c != INVALID_SOCKET) {
             setNonBlocking(c);
+            int one = 1;  // disable Nagle: bridge traffic is small request/response
+            setsockopt(c, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&one), sizeof(one));
             g_client = c;
             g_rx.clear();
             std::printf("[AP] client connected\n");
