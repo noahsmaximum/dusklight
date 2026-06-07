@@ -182,6 +182,28 @@ bool grantProgressive(u8 id) {
                 if (!dComIfGs_isCollectMirror(i)) { dComIfGs_onCollectMirror(i); break; }
             }
             return true;
+        case 0x29:  // Progressive Master Sword (4): Ordon -> Master -> Light Sword
+            if (!dComIfGs_isItemFirstBit(0x28)) execItemGet(0x28);        // Ordon Sword
+            else if (!dComIfGs_isItemFirstBit(0x29)) execItemGet(0x29);   // Master Sword
+            else execItemGet(0x49);                                        // Light Sword
+            return true;
+        case 0x43:  // Progressive Hero's Bow (3): bow(+30 quiver) -> 60 -> 100
+            if (!dComIfGs_isItemFirstBit(0x43)) execItemGet(0x43);        // bow + 30
+            else if (dComIfGs_getArrowMax() < 60) execItemGet(0x54);      // big quiver (60)
+            else execItemGet(0x56);                                        // giant quiver (100)
+            return true;
+        case 0x32:  // Shadow Crystal: enable transform-at-will. The base func
+                    // (item_func_MAGIC_LV1) only gave a magic meter (vestigial in TP);
+                    // the real gate is event M_077 (0xD04) "Get shadow crystal".
+            dComIfGs_onEventBit(0xD04);
+            return true;
+        case 0x2C:  // Hylian Shield: item_func_HYLIA_SHIELD is an empty stub.
+            dComIfGs_setCollectShield(COLLECT_HYLIAN_SHIELD);
+            dComIfGs_setSelectEquipShield(0x2C);
+            return true;
+        case 0x4F:  // Giant Bomb Bag: item_func_BOMB_BAG_LV2 is empty; grant a bomb bag
+            execItemGet(0x50);  // BOMB_BAG_LV1 -> fills the next empty bomb slot
+            return true;
         case 0xD8:  // Progressive Fused Shadow (3) -> collect next crystal
             for (u8 i = 0; i < 3; ++i) {
                 if (!dComIfGs_isCollectCrystal(i)) { dComIfGs_onCollectCrystal(i); break; }
@@ -227,14 +249,11 @@ bool grantProgressive(u8 id) {
 //  - everything else             -> execItemGet() (the decomp's normal dispatch).
 // The id is logged so the queue drain is self-diagnosing in the console.
 //
-// TODO(rando): remaining progressives still pass a fixed id to execItemGet. These are
-// "playable as-is" because tier 1 already grants a working item, they just don't reach
-// higher tiers: Master Sword 0x29 (-> always Master, skips Ordon; fine), Bow 0x43
-// (quiver never grows past 30), Dominion Rod 0x46 (gives charged rod; fine), Fishing
-// Rod 0x4A, Bomb Bag 0x51 (extra bomb-type bags). Stubs to verify: Hylian Shield 0x2C
-// / Ordon Shield 0x2B (empty funcs), Giant Bomb Bag 0x4F (empty), Shadow Crystal 0x32
-// (-> MAGIC_LV1). Sky Book 0xE9 is handled in grantProgressive but the full Shad ->
-// Sky Cannon -> City in the Sky flow is untested at endgame.
+// Remaining items routed straight to execItemGet are playable as-is: Dominion Rod 0x46
+// (gives a charged/working rod; no uncharged tier) and Fishing Rod 0x4A (basic rod; no
+// Coral-Earring upgrade). Bomb Bag 0x51 already escalates because setEmptyBombBag()
+// fills the next empty bomb slot. Sky Book 0xE9 is handled in grantProgressive but its
+// full in-game Shad -> Sky Cannon -> City in the Sky flow is untested at endgame.
 void grantItem(u8 itemId) {
     if (itemId == 0x00) return;
     std::printf("[AP] grant id=0x%02X\n", itemId);
