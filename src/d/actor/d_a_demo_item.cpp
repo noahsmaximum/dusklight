@@ -416,6 +416,11 @@ void daDitem_c::set_mtx() {
 
     mDoMtx_stack_c::transS(current.pos.x, current.pos.y, current.pos.z);
     mDoMtx_stack_c::YrotM(current.angle.y);
+    // Archipelago: setBaseTRMtx replaces the whole base transform, so the actor scale
+    // never reaches the model - bake the placeholder shrink into the matrix instead.
+    if (m_itemNo == dItemNo_LIGHT_DROP_e) {
+        mDoMtx_stack_c::scaleM(0.12f, 0.12f, 0.12f);
+    }
     mpModel->setBaseTRMtx(mDoMtx_stack_c::get());
 }
 
