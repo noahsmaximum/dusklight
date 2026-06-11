@@ -93,6 +93,12 @@ void armLocationText(uint32_t key) {
     g_pendingTtl   = 600;  // frames; expires if no message follows (failsafe)
 }
 
+// True while the last give-site that consulted the placement table was an actual
+// randomized (scouted) location. Scopes vanilla-item suppression so non-check
+// chests (plain rupee chests etc.) still give their contents.
+bool g_lastSiteTracked = false;
+int  g_lastSiteTtl     = 0;
+
 inline u8* saveBase() { return reinterpret_cast<u8*>(dComIfGs_getSaveInfo()); }
 
 inline bool inGame() {
@@ -489,6 +495,9 @@ void onGameFrame() {
     if (g_pendingArmed && --g_pendingTtl <= 0) {
         g_pendingArmed = false;  // no get message followed the give-site; disarm
     }
+    if (g_lastSiteTracked && --g_lastSiteTtl <= 0) {
+        g_lastSiteTracked = false;
+    }
     if (!inGame() || !safeToGive()) return;
     u8* base = saveBase();
     if (!base) return;
@@ -569,6 +578,8 @@ uint8_t lookupNodeFlag(int areaOff, int bitNo, uint8_t vanillaId) {
     uint32_t key     = (node << 16) | (byteOff << 8) | mask;
     armLocationText(key);  // queue this location's pickup text for the get message
     auto it = g_placements.find(key);
+    g_lastSiteTracked = (it != g_placements.end());
+    g_lastSiteTtl     = 600;
     if (it == g_placements.end()) return vanillaId;
     std::printf("[AP] display override node=%u flag=%d: %02X -> %02X\n", node, bitNo, vanillaId, it->second);
     return it->second;
@@ -578,6 +589,12 @@ uint8_t lookupNodeFlag(int areaOff, int bitNo, uint8_t vanillaId) {
 
 uint8_t displayForTbox(int bitNo, uint8_t vanillaId) {
     return lookupNodeFlag(0x00, bitNo, vanillaId);  // dSv_memBit_c::mTbox at +0x00
+}
+
+bool consumeGiveSuppression() {
+    if (!randoActive() || !g_lastSiteTracked) return false;
+    g_lastSiteTracked = false;
+    return true;
 }
 
 uint8_t displayForItemFlag(int bitNo, uint8_t vanillaId) {

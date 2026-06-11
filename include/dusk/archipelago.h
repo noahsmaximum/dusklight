@@ -34,6 +34,11 @@ bool randoActive();
 uint8_t displayForTbox(int bitNo, uint8_t vanillaId);      // chest, keyed by tbox flag no
 uint8_t displayForItemFlag(int bitNo, uint8_t vanillaId);  // freestanding, keyed by item flag no
 
+// True (and consumed) when the last give-site that consulted the placement table
+// was a scouted AP location: the present-demo suppresses its vanilla grant only
+// then, so non-randomized chests keep giving their contents.
+bool consumeGiveSuppression();
+
 // Item id repurposed as the off-world placeholder (the client sends it for other
 // players' items). 0xAE = dItemNo_NOENTRY_174_e, an unused slot whose item-resource
 // row is retargeted at the Sol model (d_item_data.cpp). NOTE: this is NOT

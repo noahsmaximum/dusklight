@@ -171,10 +171,11 @@ void daDitem_c::actionEvent() {
 
     if (chkDead()) {
         if (!chkArgFlag(0x1)) {
-            // Archipelago: in fully-remote mode the present demo still plays, but the
-            // vanilla location item is suppressed - the AP client delivers the real
-            // item. Environmental drops use other actors and are unaffected.
-            if (!dusk::archipelago::randoActive()) {
+            // Archipelago: suppress the vanilla grant only when this pickup came from
+            // a scouted AP location (the give-site consulted the placement table) -
+            // the client delivers the real item. Non-randomized chests/gifts give
+            // their contents normally.
+            if (!dusk::archipelago::consumeGiveSuppression()) {
                 execItemGet(m_itemNo);
             }
         }
