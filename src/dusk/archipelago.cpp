@@ -32,8 +32,10 @@
 #endif
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
+#include <unordered_map>
 
 #include "dusk/archipelago.h"
 #include "d/d_save.h"             // dSv_info_c, dSv_memBit_c, dSv_event_flag_c
@@ -56,6 +58,11 @@ socket_t    g_client   = INVALID_SOCKET;
 int         g_port     = 17354;
 bool        g_initDone = false;
 std::string g_rx;
+
+// Placement display table (PLCS command): location key -> item id to display.
+// Key layout matches the client's location identity for Region-type checks:
+// (node << 16) | (byte offset within the node's dSv_memBit_c << 8) | bit mask.
+std::unordered_map<uint32_t, u8> g_placements;
 
 inline u8* saveBase() { return reinterpret_cast<u8*>(dComIfGs_getSaveInfo()); }
 
@@ -351,6 +358,31 @@ void handleCommand(const std::string& line) {
         sendLine(std::string("OK ") + (safeToGive() ? "1" : "0"));
         return;
     }
+    if (line.rfind("PLCS", 0) == 0) {
+        // Bulk placement table: "PLCS key:id,key:id,..." (hex). Replaces the table.
+        g_placements.clear();
+        size_t pos = 5;
+        int n = 0;
+        while (pos < line.size()) {
+            size_t colon = line.find(':', pos);
+            if (colon == std::string::npos) break;
+            size_t comma = line.find(',', colon);
+            size_t vend  = (comma == std::string::npos) ? line.size() : comma;
+            uint32_t key = std::strtoul(line.substr(pos, colon - pos).c_str(), nullptr, 16);
+            u8 id        = static_cast<u8>(std::strtoul(line.substr(colon + 1, vend - colon - 1).c_str(), nullptr, 16));
+            if (key != 0 && id != 0) {
+                g_placements[key] = id;
+                ++n;
+            }
+            if (comma == std::string::npos) break;
+            pos = comma + 1;
+        }
+        std::printf("[AP] placement table: %d entries\n", n);
+        char buf[32];
+        std::snprintf(buf, sizeof(buf), "OK %d", n);
+        sendLine(buf);
+        return;
+    }
     sendLine("ERR");
 }
 
@@ -426,6 +458,7 @@ void update() {
     if (n == 0 || (n < 0 && !wouldBlock())) {
         closeSocket(g_client);
         g_client = INVALID_SOCKET;
+        g_placements.clear();
         std::printf("[AP] client disconnected\n");
         return;
     }
@@ -453,5 +486,33 @@ bool isListening()       { return g_listen != INVALID_SOCKET; }
 bool isClientConnected() { return g_client != INVALID_SOCKET; }
 int  listenPort()        { return g_port; }
 bool randoActive()       { return g_client != INVALID_SOCKET; }
+
+namespace {
+
+// Region-type location key for a memBit flag in the CURRENT stage's node: matches
+// the byte:bit the client reads from the node block (BE u32 words, so byte within
+// a word is mirrored).
+uint8_t lookupNodeFlag(int areaOff, int bitNo, uint8_t vanillaId) {
+    if (!randoActive() || g_placements.empty()) return vanillaId;
+    stage_stag_info_class* si = dComIfGp_getStageStagInfo();
+    if (!si) return vanillaId;
+    uint32_t node    = static_cast<uint32_t>(dStage_stagInfo_GetSaveTbl(si));
+    uint32_t byteOff = static_cast<uint32_t>(areaOff + (bitNo >> 5) * 4 + (3 - ((bitNo & 0x1F) >> 3)));
+    uint32_t mask    = 1u << (bitNo & 7);
+    auto it = g_placements.find((node << 16) | (byteOff << 8) | mask);
+    if (it == g_placements.end()) return vanillaId;
+    std::printf("[AP] display override node=%u flag=%d: %02X -> %02X\n", node, bitNo, vanillaId, it->second);
+    return it->second;
+}
+
+}  // namespace
+
+uint8_t displayForTbox(int bitNo, uint8_t vanillaId) {
+    return lookupNodeFlag(0x00, bitNo, vanillaId);  // dSv_memBit_c::mTbox at +0x00
+}
+
+uint8_t displayForItemFlag(int bitNo, uint8_t vanillaId) {
+    return lookupNodeFlag(0x18, bitNo, vanillaId);  // dSv_memBit_c::mItem at +0x18
+}
 
 }  // namespace dusk::archipelago

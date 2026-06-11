@@ -10,6 +10,7 @@
 #include "d/actor/d_a_player.h"
 #include "d/d_item_data.h"
 #include "d/d_tresure.h"
+#include "dusk/archipelago.h"
 #include "f_op/f_op_camera_mng.h"
 #include <cstring>
 
@@ -320,7 +321,16 @@ int daKey_c::initActionOrderGetDemo() {
     fopAcM_orderItemEvent(this, 0, 0);
     eventInfo.onCondition(8);
 
-    mItemId = fopAcM_createItemForTrBoxDemo(&current.pos, m_itemNo, -1, fopAcM_GetRoomNo(this), NULL, NULL);
+    // Archipelago: display the AP-placed item (the check is the Tbox flag set in
+    // actionGetDemo, which is unaffected).
+    u8 demoItemNo = m_itemNo;
+    {
+        u8 disp = dusk::archipelago::displayForTbox(getSaveBitNo(), demoItemNo);
+        if (disp != demoItemNo && dItem_data::getArcName(disp) != NULL) {
+            demoItemNo = disp;
+        }
+    }
+    mItemId = fopAcM_createItemForTrBoxDemo(&current.pos, demoItemNo, -1, fopAcM_GetRoomNo(this), NULL, NULL);
     JUT_ASSERT(699, mItemId != fpcM_ERROR_PROCESS_ID_e);
 
     setStatus(STATUS_ORDER_GET_DEMO_e);

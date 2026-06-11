@@ -9,6 +9,7 @@
 #include "d/d_com_inf_game.h"
 #include "d/actor/d_a_player.h"
 #include "d/d_item_data.h"
+#include "dusk/archipelago.h"
 #include "SSystem/SComponent/c_math.h"
 #include <cstring>
 
@@ -296,7 +297,19 @@ int daObjLife_c::initActionOrderGetDemo() {
     fopAcM_orderItemEvent(this, 0, 0);
     eventInfo.onCondition(dEvtCnd_CANGETITEM_e);
 
-    mItemId = fopAcM_createItemForTrBoxDemo(&current.pos, m_itemNo, -1, fopAcM_GetRoomNo(this), NULL, NULL);
+    // Archipelago: display the AP-placed item in the get demo (the member m_itemNo is
+    // left untouched - actionGetDemo's flag logic keys off the vanilla id).
+    u8 demoItemNo = m_itemNo;
+    {
+        u8 savebit = getSaveBitNo();
+        if (savebit != 0xFF) {
+            u8 disp = dusk::archipelago::displayForItemFlag(savebit, demoItemNo);
+            if (disp != demoItemNo && dItem_data::getArcName(disp) != NULL) {
+                demoItemNo = disp;
+            }
+        }
+    }
+    mItemId = fopAcM_createItemForTrBoxDemo(&current.pos, demoItemNo, -1, fopAcM_GetRoomNo(this), NULL, NULL);
     JUT_ASSERT(699, mItemId != fpcM_ERROR_PROCESS_ID_e);
 
     setStatus(STATUS_ORDER_GET_DEMO_e);

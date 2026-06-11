@@ -269,6 +269,25 @@ int daItem_c::_daItem_create() {
     }
 
     m_itemNo = daItem_prm::getItemNo(this);
+
+    // Archipelago: tracked placements display the AP-placed item (or the off-world
+    // placeholder). Only swap to ids this actor can represent: needs a field arc and
+    // must not be one of the ids the ITEM actor can't handle.
+    {
+        u32 apBitNo = daItem_prm::getItemBitNo(this);
+        if (apBitNo != 0xFF) {
+            u8 disp = dusk::archipelago::displayForItemFlag(static_cast<int>(apBitNo), m_itemNo);
+            if (disp != m_itemNo && dItem_data::getFieldArc(disp) != NULL &&
+                disp != dItemNo_SMALL_KEY_e && disp != dItemNo_KANTERA_e &&
+                disp != dItemNo_LIGHT_DROP_e && disp != dItemNo_UTAWA_HEART_e &&
+                disp != dItemNo_KAKERA_HEART_e && disp != dItemNo_BOMB_5_e &&
+                disp != dItemNo_BOMB_10_e && disp != dItemNo_BOMB_20_e &&
+                disp != dItemNo_BOMB_30_e)
+            {
+                m_itemNo = disp;
+            }
+        }
+    }
 #if TARGET_PC
     if (dusk::getSettings().game.noHeartDrops && isHeart(m_itemNo)) {
         return cPhs_ERROR_e;

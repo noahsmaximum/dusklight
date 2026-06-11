@@ -3,6 +3,7 @@
 #include "d/actor/d_a_tbox.h"
 #include "d/d_tresure.h"
 #include "d/d_item_data.h"
+#include "dusk/archipelago.h"
 #include "d/actor/d_a_midna.h"
 #include "d/d_path.h"
 #include "d/d_bg_w.h"
@@ -1395,6 +1396,16 @@ int daTbox_c::setGetDemoItem() {
         item_no == dItemNo_BOMB_INSECT_5_e || item_no == dItemNo_BOMB_INSECT_10_e || item_no == dItemNo_BOMB_INSECT_20_e || item_no == dItemNo_BOMB_INSECT_30_e)
     {
         item_no = getBombItemNoMain(item_no);
+    }
+
+    // Archipelago: show the AP-placed item (or the off-world placeholder) instead of
+    // the vanilla contents. Text follows the id automatically. Only swap when the
+    // display item has present-demo model resources.
+    {
+        u8 disp = dusk::archipelago::displayForTbox(getTboxNo(), item_no);
+        if (disp != item_no && dItem_data::getArcName(disp) != NULL) {
+            item_no = disp;
+        }
     }
 
     fpc_ProcID item_id;

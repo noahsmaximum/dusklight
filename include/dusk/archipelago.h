@@ -25,4 +25,13 @@ int  listenPort();
 // item-give, and all items are delivered by the client via execItemGet.
 bool randoActive();
 
+// Display overrides: the client scouts the seed and pushes a placement table
+// (PLCS command) mapping location keys -> the item id to SHOW at that location
+// (the AP-placed item for own-world, a placeholder for other players' items).
+// These return the display id for a give-site, or vanillaId when no override
+// applies. The caller is responsible for verifying the returned id has model
+// resources for its path (demo arc vs field arc) before using it.
+uint8_t displayForTbox(int bitNo, uint8_t vanillaId);      // chest, keyed by tbox flag no
+uint8_t displayForItemFlag(int bitNo, uint8_t vanillaId);  // freestanding, keyed by item flag no
+
 }  // namespace dusk::archipelago
