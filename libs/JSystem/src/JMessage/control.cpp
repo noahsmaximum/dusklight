@@ -65,6 +65,8 @@ int JMessage::TControl::setMessageCode(u16 u16GroupID, u16 u16Index) {
     return setMessageCode_inReset_(pProcessor, u16GroupID, u16Index);
 }
 
+const void* (*JMessage::sSetMessageIDTextOverride)(u32, const void*) = NULL;
+
 int JMessage::TControl::setMessageID(u32 uMsgID, u32 param_1, bool* pbValid) {
     TProcessor* pProcessor = getProcessor();
     JUT_ASSERT(132, pProcessor!=NULL);
@@ -74,7 +76,19 @@ int JMessage::TControl::setMessageID(u32 uMsgID, u32 param_1, bool* pbValid) {
         return 0;
     }
 
-    return setMessageCode_inReset_(pProcessor, uCode >> 16, uCode & 0xFFFF);
+    int ret = setMessageCode_inReset_(pProcessor, uCode >> 16, uCode & 0xFFFF);
+
+    // Dusklight: let the game substitute the resolved text (e.g. Archipelago item
+    // names for randomized pickups).
+    if (ret != 0 && sSetMessageIDTextOverride != NULL) {
+        const void* replacement = sSetMessageIDTextOverride(uMsgID, pMessageText_begin_);
+        if (replacement != NULL) {
+            pMessageText_begin_ = static_cast<const char*>(replacement);
+            pMessageText_current_ = static_cast<const char*>(replacement);
+        }
+    }
+
+    return ret;
 }
 
 bool JMessage::TControl::setMessageCode_inSequence_(JMessage::TProcessor const* pProcessor, u16 u16GroupID, u16 u16Index) {

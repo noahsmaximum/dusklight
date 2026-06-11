@@ -6,6 +6,7 @@
 #include "d/actor/d_a_alink.h"
 #include "d/d_com_inf_game.h"
 #include "d/d_demo.h"
+#include "dusk/archipelago.h"
 #include "d/d_gameover.h"
 #include "f_op/f_op_msg_mng.h"
 #include "f_op/f_op_overlap_mng.h"
@@ -2223,6 +2224,12 @@ void daAlink_c::setGetSubBgm(int i_itemNo) {
 
     u32 se_type = getSeType[i_itemNo];
 
+    // Archipelago: the off-world placeholder lives in a noentry slot (silent by
+    // default); play the standard chest-item fanfare.
+    if (i_itemNo == dusk::archipelago::kPlaceholderItemNo) {
+        se_type = SETYPE_ITEM_GET;
+    }
+
     if (se_type == SETYPE_ITEM_GET_ME && mProcVar4.field_0x3010 == 0) {
         se_type = SETYPE_ITEM_GET_ME_S;
     }
@@ -2518,7 +2525,12 @@ int daAlink_c::procCoGetItem() {
         if (item_partner_p != NULL) {
             if (!fpcM_IsCreating(fpcM_GetID(item_partner_p))) {
                 if (field_0x32cc == 0 && mProcVar2.field_0x300c != -1) {
-                    if (mProcVar2.field_0x300c == 0x70 && checkStageName("F_SP115")) {
+                    if (mProcVar2.field_0x300c == dusk::archipelago::kPlaceholderItemNo) {
+                        // Archipelago: the placeholder's own get message (id+0x65)
+                        // doesn't exist in the BMG; borrow the green rupee's as a
+                        // carrier - the AP text override replaces its content.
+                        field_0x32cc = 0x66;
+                    } else if (mProcVar2.field_0x300c == 0x70 && checkStageName("F_SP115")) {
                         field_0x32cc = 0x6E;
                     } else if (mProcVar2.field_0x300c == 0x23 && checkStageName("D_MN11")) {
                         field_0x32cc = 0x5C0;

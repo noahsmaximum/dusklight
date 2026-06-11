@@ -5,9 +5,14 @@
 
 namespace JMessage {
 
+// Dusklight: optional text override consulted by TControl::setMessageID after the
+// message resolves. Receives the global message id and the resolved raw text; a
+// non-null return replaces the message text (raw bytes, NUL-terminated).
+extern const void* (*sSetMessageIDTextOverride)(u32 uMsgID, const void* original);
+
 /**
  * @ingroup jsystem-jmessage
- * 
+ *
  */
 struct TControl {
     TControl();

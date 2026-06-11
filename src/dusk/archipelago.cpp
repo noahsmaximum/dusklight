@@ -42,6 +42,7 @@
 #include "d/d_com_inf_game.h"     // dComIfGs_getSaveInfo(), dComIfGp_getStageStagInfo()
 #include "d/d_item.h"             // execItemGet()
 #include "d/d_stage.h"            // dStage_SaveTbl, dStage_stagInfo_GetSaveTbl()
+#include "JSystem/JMessage/control.h"  // sSetMessageIDTextOverride
 
 namespace dusk::archipelago {
 
@@ -63,6 +64,34 @@ std::string g_rx;
 // Key layout matches the client's location identity for Region-type checks:
 // (node << 16) | (byte offset within the node's dSv_memBit_c << 8) | bit mask.
 std::unordered_map<uint32_t, u8> g_placements;
+
+// Per-location pickup text (PLCT command): full replacement get-message per key
+// ("You got X!" / "X for Player!"), composed client-side. When a give-site fires,
+// the text is armed and consumed by the JMessage override on the next get message.
+std::unordered_map<uint32_t, std::string> g_locText;
+bool        g_pendingArmed = false;
+int         g_pendingTtl   = 0;
+std::string g_pendingText;
+std::string g_msgBuf;
+
+const void* msgTextOverride(u32 msgId, const void* original) {
+    (void)original;
+    if (!g_pendingArmed) return nullptr;
+    // Get-item texts live at itemNo+0x65 plus a handful of specials; accept the
+    // first message while armed (armed only between give-site and its get demo).
+    if (msgId < 0x65 || msgId > 0x5C0) return nullptr;
+    g_pendingArmed = false;
+    g_msgBuf = g_pendingText;
+    return g_msgBuf.c_str();
+}
+
+void armLocationText(uint32_t key) {
+    auto it = g_locText.find(key);
+    if (it == g_locText.end()) return;
+    g_pendingText  = it->second;
+    g_pendingArmed = true;
+    g_pendingTtl   = 600;  // frames; expires if no message follows (failsafe)
+}
 
 inline u8* saveBase() { return reinterpret_cast<u8*>(dComIfGs_getSaveInfo()); }
 
@@ -358,6 +387,38 @@ void handleCommand(const std::string& line) {
         sendLine(std::string("OK ") + (safeToGive() ? "1" : "0"));
         return;
     }
+    if (line.rfind("PLCT", 0) == 0) {
+        // Bulk pickup-text table: "PLCT key:hextext,key:hextext,..." (hex-encoded
+        // UTF-8/ASCII bytes). Replaces the table.
+        g_locText.clear();
+        size_t pos = 5;
+        int n = 0;
+        while (pos < line.size()) {
+            size_t colon = line.find(':', pos);
+            if (colon == std::string::npos) break;
+            size_t comma = line.find(',', colon);
+            size_t vend  = (comma == std::string::npos) ? line.size() : comma;
+            uint32_t key = std::strtoul(line.substr(pos, colon - pos).c_str(), nullptr, 16);
+            std::string text;
+            text.reserve((vend - colon) / 2);
+            for (size_t i = colon + 1; i + 1 < vend; i += 2) {
+                int hi = nib(line[i]), lo = nib(line[i + 1]);
+                if (hi < 0 || lo < 0) break;
+                text.push_back(static_cast<char>((hi << 4) | lo));
+            }
+            if (key != 0 && !text.empty()) {
+                g_locText[key] = text;
+                ++n;
+            }
+            if (comma == std::string::npos) break;
+            pos = comma + 1;
+        }
+        std::printf("[AP] pickup-text table: %d entries\n", n);
+        char buf[32];
+        std::snprintf(buf, sizeof(buf), "OK %d", n);
+        sendLine(buf);
+        return;
+    }
     if (line.rfind("PLCS", 0) == 0) {
         // Bulk placement table: "PLCS key:id,key:id,..." (hex). Replaces the table.
         g_placements.clear();
@@ -401,6 +462,7 @@ void setNonBlocking(socket_t s) {
 void init(int port) {
     g_initDone = true;
     g_port = port;
+    JMessage::sSetMessageIDTextOverride = &msgTextOverride;
 #if _WIN32
     WSADATA wd{};
     WSAStartup(MAKEWORD(2, 2), &wd);
@@ -424,6 +486,9 @@ void init(int port) {
 }
 
 void onGameFrame() {
+    if (g_pendingArmed && --g_pendingTtl <= 0) {
+        g_pendingArmed = false;  // no get message followed the give-site; disarm
+    }
     if (!inGame() || !safeToGive()) return;
     u8* base = saveBase();
     if (!base) return;
@@ -459,6 +524,8 @@ void update() {
         closeSocket(g_client);
         g_client = INVALID_SOCKET;
         g_placements.clear();
+        g_locText.clear();
+        g_pendingArmed = false;
         std::printf("[AP] client disconnected\n");
         return;
     }
@@ -493,13 +560,15 @@ namespace {
 // the byte:bit the client reads from the node block (BE u32 words, so byte within
 // a word is mirrored).
 uint8_t lookupNodeFlag(int areaOff, int bitNo, uint8_t vanillaId) {
-    if (!randoActive() || g_placements.empty()) return vanillaId;
+    if (!randoActive()) return vanillaId;
     stage_stag_info_class* si = dComIfGp_getStageStagInfo();
     if (!si) return vanillaId;
     uint32_t node    = static_cast<uint32_t>(dStage_stagInfo_GetSaveTbl(si));
     uint32_t byteOff = static_cast<uint32_t>(areaOff + (bitNo >> 5) * 4 + (3 - ((bitNo & 0x1F) >> 3)));
     uint32_t mask    = 1u << (bitNo & 7);
-    auto it = g_placements.find((node << 16) | (byteOff << 8) | mask);
+    uint32_t key     = (node << 16) | (byteOff << 8) | mask;
+    armLocationText(key);  // queue this location's pickup text for the get message
+    auto it = g_placements.find(key);
     if (it == g_placements.end()) return vanillaId;
     std::printf("[AP] display override node=%u flag=%d: %02X -> %02X\n", node, bitNo, vanillaId, it->second);
     return it->second;
