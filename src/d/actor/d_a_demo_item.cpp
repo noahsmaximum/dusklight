@@ -491,6 +491,13 @@ int daDitem_c::create() {
         }
 
         CreateInit();
+
+        // Archipelago: the off-world placeholder (LIGHT_DROP) borrows the Sol model,
+        // which is world-scale - shrink it to hand-held size.
+        if (m_itemNo == dItemNo_LIGHT_DROP_e) {
+            mMaxScale = 0.35f;
+        }
+
         OS_REPORT("DEMOITEM PARAM:%x\n", fopAcM_GetParam(this));
     }
 
