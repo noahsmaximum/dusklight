@@ -498,12 +498,11 @@ int daDitem_c::create() {
         CreateInit();
 
         // Archipelago: the off-world placeholder borrows the Sol model (Obj_ballS),
-        // which is world-scale - shrink it to hand-held size. Set the actor scale
-        // directly: the execute() chase toward mMaxScale only runs under chkDraw(),
-        // which doesn't cover the whole get-demo.
+        // which is world-scale - shrink it to hand-held size via mMaxScale (the chase
+        // target) and set_mtx. Leave the initial actor scale at the vanilla 0 so the
+        // item grows in when the demo presents it instead of showing early.
         if (m_itemNo == dusk::archipelago::kPlaceholderItemNo) {
             mMaxScale = 0.6f;
-            scale.setall(0.6f);
         }
 
         OS_REPORT("DEMOITEM PARAM:%x\n", fopAcM_GetParam(this));
