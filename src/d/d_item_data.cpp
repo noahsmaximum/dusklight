@@ -177,8 +177,8 @@ dItem_itemResource dItem_data::item_resource[] = {
     {"F_gD_rupy", 0x0004,-0x0001,-0x0001, 0x0007,-0x0001, 0x0, -0x1, 0x002D, 0x64, 0x0000},
     {"F_gD_rupy", 0x0004,-0x0001,-0x0001, 0x0007,-0x0001, 0x0, -0x1, 0x002D, 0x64, 0x0000},
     {"F_gD_rupy", 0x0004,-0x0001,-0x0001, 0x0007,-0x0001, 0x0, -0x1, 0x002D, 0x64, 0x0000},
-    // dItemNo_LIGHT_DROP_e (0xAE): repurposed as the Archipelago off-world placeholder.
-    // Vanilla row was the rupee fallback (tears of light are pure particles, no mesh).
+    // 0xAE = dItemNo_NOENTRY_174_e: unused slot repurposed as the Archipelago
+    // off-world placeholder (dusk::archipelago::kPlaceholderItemNo).
     // "Obj_ballS" bmd 3 = LV8_OBJ_HIKARIS - the actual Palace of Twilight Sol orb.
     // (P_LBswBC bmd 5/6 are the Lakebed switch-ball ring halves - wrong family.)
     {"Obj_ballS", 0x0003,-0x0001,-0x0001,-0x0001,-0x0001, -0x1, -0x1, 0x002D, 0x64, 0x0000},

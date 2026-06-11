@@ -34,4 +34,10 @@ bool randoActive();
 uint8_t displayForTbox(int bitNo, uint8_t vanillaId);      // chest, keyed by tbox flag no
 uint8_t displayForItemFlag(int bitNo, uint8_t vanillaId);  // freestanding, keyed by item flag no
 
+// Item id repurposed as the off-world placeholder (the client sends it for other
+// players' items). 0xAE = dItemNo_NOENTRY_174_e, an unused slot whose item-resource
+// row is retargeted at the Sol model (d_item_data.cpp). NOTE: this is NOT
+// dItemNo_LIGHT_DROP_e (0xA0).
+constexpr uint8_t kPlaceholderItemNo = 0xAE;
+
 }  // namespace dusk::archipelago

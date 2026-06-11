@@ -418,13 +418,8 @@ void daDitem_c::set_mtx() {
     mDoMtx_stack_c::YrotM(current.angle.y);
     // Archipelago: setBaseTRMtx replaces the whole base transform, so the actor scale
     // never reaches the model - bake the placeholder shrink into the matrix instead.
-    if (m_itemNo == dItemNo_LIGHT_DROP_e) {
+    if (m_itemNo == dusk::archipelago::kPlaceholderItemNo) {
         mDoMtx_stack_c::scaleM(0.12f, 0.12f, 0.12f);
-        static bool s_logged = false;
-        if (!s_logged) {
-            s_logged = true;
-            printf("[AP] placeholder set_mtx scale active (model=%p)\n", (void*)mpModel);
-        }
     }
     mpModel->setBaseTRMtx(mDoMtx_stack_c::get());
 }
@@ -502,11 +497,11 @@ int daDitem_c::create() {
 
         CreateInit();
 
-        // Archipelago: the off-world placeholder (LIGHT_DROP) borrows the Sol model
-        // (Obj_ballS), which is world-scale - shrink it to hand-held size. Set the
-        // actor scale directly: the execute() chase toward mMaxScale only runs under
-        // chkDraw(), which doesn't cover the whole get-demo.
-        if (m_itemNo == dItemNo_LIGHT_DROP_e) {
+        // Archipelago: the off-world placeholder borrows the Sol model (Obj_ballS),
+        // which is world-scale - shrink it to hand-held size. Set the actor scale
+        // directly: the execute() chase toward mMaxScale only runs under chkDraw(),
+        // which doesn't cover the whole get-demo.
+        if (m_itemNo == dusk::archipelago::kPlaceholderItemNo) {
             mMaxScale = 0.12f;
             scale.setall(0.12f);
         }
