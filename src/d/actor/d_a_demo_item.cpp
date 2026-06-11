@@ -420,6 +420,11 @@ void daDitem_c::set_mtx() {
     // never reaches the model - bake the placeholder shrink into the matrix instead.
     if (m_itemNo == dItemNo_LIGHT_DROP_e) {
         mDoMtx_stack_c::scaleM(0.12f, 0.12f, 0.12f);
+        static bool s_logged = false;
+        if (!s_logged) {
+            s_logged = true;
+            printf("[AP] placeholder set_mtx scale active (model=%p)\n", (void*)mpModel);
+        }
     }
     mpModel->setBaseTRMtx(mDoMtx_stack_c::get());
 }
