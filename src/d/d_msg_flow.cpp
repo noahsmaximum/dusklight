@@ -13,6 +13,7 @@
 #include "d/actor/d_a_myna.h"
 #include "d/actor/d_a_obj_ss_base.h"
 #include "SSystem/SComponent/c_math.h"
+#include "dusk/archipelago.h"
 #include <cstring>
 
 dMsgFlow_c::dMsgFlow_c() {
@@ -1753,11 +1754,19 @@ int dMsgFlow_c::event000(mesg_flow_node_event* i_flowNode_p, fopAc_ac_c* i_speak
     OS_REPORT("\x1B[44;32mイベントフラグＯＮ　　　　　　　　　\x1B[m|:");
     OS_REPORT("flow:%d, prm0:%d, prm1:%d\n", mFlow, prm0, prm1);
 
-    if (prm0 != 0) {
+    // Archipelago: hidden-skill knowledge flags F_0338..F_0344 (label indices 338-344)
+    // are the vanilla "item" of the golden-wolf lessons; suppress so the AP-delivered
+    // Progressive Hidden Skill is authoritative. The wolves' location-check flags are
+    // different indices and still get set.
+    const auto skipSkillFlag = [](u16 idx) {
+        return dusk::archipelago::randoActive() && idx >= 338 && idx <= 344;
+    };
+
+    if (prm0 != 0 && !skipSkillFlag(prm0)) {
         dComIfGs_onEventBit(dSv_event_flag_c::saveBitLabels[prm0]);
     }
 
-    if (prm1 != 0) {
+    if (prm1 != 0 && !skipSkillFlag(prm1)) {
         dComIfGs_onEventBit(dSv_event_flag_c::saveBitLabels[prm1]);
     }
 

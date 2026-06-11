@@ -11,6 +11,7 @@
 #include "d/d_com_inf_game.h"
 #include "d/d_item.h"
 #include "d/d_kankyo_rain.h"
+#include "dusk/archipelago.h"
 #include "d/d_camera.h"
 #include "m_Do/m_Do_graphic.h"
 #include "m_Do/m_Do_ext.h"
@@ -808,7 +809,9 @@ inline int daDemo00_c::execute() {
                                     };
                                     JUT_ASSERT(1389, resID8 < (sizeof(l_itemNo)/sizeof(u8)));
                                     u8 itemNo = l_itemNo[resID8];
-                                    if (itemNo != 0xFF) {
+                                    // Archipelago: the Master Sword pedestal check is an
+                                    // event flag set by the demo, not this grant.
+                                    if (itemNo != 0xFF && !dusk::archipelago::randoActive()) {
                                         execItemGet(itemNo);
                                     }
                                     break;

@@ -35,15 +35,21 @@ So suppression must be applied **per source/category**, not globally.
       check still registers.
 - [x] Fishing-hole heart piece (`d_a_mg_rod`) — direct `execItemGet(KAKERA_HEART)` gated;
       `onItem` flag + fishing event reg kept.
-- [ ] `d_a_demo00` case 3 = the **Master Sword** (`0x29`) get demo. LEFT as a vanilla
-      give on purpose: it's progression-critical and the check flag may BE the
-      `onItemFirstBit` that `execItemGet` sets, so blind suppression risks a softlock.
-      Needs the apworld's location-flag confirmed before gating.
-- [ ] Golden bugs — no direct `execItemGet` found; assumed present-demo path (verify).
-- [ ] Hidden skills (golden wolves / Hero's Shade) — event-bit based, no separate vanilla
-      item; AP delivers the progressive skill. Verify the location flag isn't the same
-      bit the AP grant sets (false-check risk, as resolved for the Sky Book).
-- [ ] Shop items, minigame rewards — direct grants tied to payment/score; defer.
+- [x] **Master Sword pedestal** — both give-sites gated (`d_a_demo00` case 3 and
+      `d_a_obj_master_sword`, which set the sword collect/equip directly). VERIFIED safe:
+      the "Sacred Grove Pedestal Master Sword"/"Pedestal Shadow Crystal" checks are one
+      shared event flag (save `0x811` bit `0x20`) set by the demo via
+      `onEventBit(getFlagNo())`, which is kept. The pedestal heal is kept too.
+- [x] **Light Sword** (`d_a_obj_swBallC` case 10, Palace of Twilight Sols) — gated;
+      "Collect Both Sols" is a region-flag check, unaffected.
+- [x] **Hidden skills** — the lesson sets `F_0338..F_0344` via the generic message-flow
+      "Event Flag ON" node (`dMsgFlow_c::event000`, label indices 338–344). Gated exactly
+      those indices when rando is active; the golden-wolf location-check flags are
+      different indices (e.g. `0x3D80`) and still set. AP's Progressive Hidden Skill is
+      authoritative.
+- [x] Golden bugs, shops, minigame rewards, Agitha, NPC quest gifts — audited: **no
+      direct `execItemGet` sites**; they all route through the present-demo actor, which
+      is already gated (category 1).
 
 ## Per-category procedure
 

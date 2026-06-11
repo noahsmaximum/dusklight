@@ -11,6 +11,7 @@
 #include "d/d_com_inf_game.h"
 #include "d/d_meter2_info.h"
 #include "d/d_item.h"
+#include "dusk/archipelago.h"
 #include "d/actor/d_a_player.h"
 #include "f_op/f_op_msg_mng.h"
 #include "f_op/f_op_msg.h"
@@ -237,7 +238,11 @@ int daObjSwBallC_c::demoProc() {
             break;
         case 10:
             field_0x584 = 1;
-            execItemGet(dItemNo_LIGHT_SWORD_e);
+            // Archipelago: "Collect Both Sols" is a region-flag check; suppress the
+            // vanilla Light Sword infusion (AP delivers the placed item).
+            if (!dusk::archipelago::randoActive()) {
+                execItemGet(dItemNo_LIGHT_SWORD_e);
+            }
             break;
         }
     }

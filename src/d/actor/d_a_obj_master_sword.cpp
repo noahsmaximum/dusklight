@@ -9,6 +9,7 @@
 #include "d/actor/d_a_player.h"
 #include "d/d_com_inf_game.h"
 #include "d/d_meter2_info.h"
+#include "dusk/archipelago.h"
 
 daObjMasterSword_Attr_c const daObjMasterSword_c::mAttr = {1.0f};
 
@@ -186,9 +187,14 @@ int daObjMasterSword_c::execute() {
     mBrk.play();
 
     if (dComIfGs_isTmpBit(dSv_event_tmp_flag_c::tempBitLabels[73])) {
-        dComIfGs_onItemFirstBit(dItemNo_MASTER_SWORD_e);
-        dMeter2Info_setSword(dItemNo_MASTER_SWORD_e, false);
-        dComIfGs_setSelectEquipSword(dItemNo_MASTER_SWORD_e);
+        // Archipelago: suppress the vanilla Master Sword grant; the event bit below is
+        // the location check and stays, so AP detects the pedestal pull and delivers
+        // the placed item instead.
+        if (!dusk::archipelago::randoActive()) {
+            dComIfGs_onItemFirstBit(dItemNo_MASTER_SWORD_e);
+            dMeter2Info_setSword(dItemNo_MASTER_SWORD_e, false);
+            dComIfGs_setSelectEquipSword(dItemNo_MASTER_SWORD_e);
+        }
 
         dComIfGp_setItemLifeCount(dComIfGs_getMaxLife(), 0);
         dComIfGs_onEventBit(dSv_event_flag_c::saveBitLabels[getFlagNo()]);
