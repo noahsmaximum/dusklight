@@ -11,10 +11,7 @@
 #include "ImGuiEngine.hpp"
 #include "d/actor/d_a_alink.h"
 #include "d/actor/d_a_horse.h"
-#include "d/actor/d_a_player.h"
 #include "d/d_com_inf_game.h"
-#include "d/d_item_data.h"
-#include "f_op/f_op_actor_mng.h"
 #include "dusk/data.hpp"
 #include "dusk/dusk.h"
 #include "dusk/main.h"
@@ -134,44 +131,6 @@ namespace dusk {
             ImGui::Text("Endpoint: 127.0.0.1:%d", dusk::archipelago::listenPort());
             ImGui::Text("AP client: %s",
                 dusk::archipelago::isClientConnected() ? "connected" : "waiting");
-
-            // Dev lab: retarget the off-world placeholder row (LIGHT_DROP 0xAE) at any
-            // archive/model and spawn a get-demo at Link to preview it live. Use the
-            // res indices from assets/GZ2E01/res/Object/<arc>.h (wrong indices can
-            // crash - this is a dev tool).
-            ImGui::SeparatorText("Placeholder model lab");
-            static char arcBuf[32]   = "Obj_ballS";
-            static int  bmdIdx       = 3;
-            static int  btkIdx       = -1;
-            static char arcKeep[32]  = "";
-            ImGui::SetNextItemWidth(140.0f);
-            ImGui::InputText("Arc", arcBuf, sizeof(arcBuf));
-            ImGui::SetNextItemWidth(140.0f);
-            ImGui::InputInt("BMD index", &bmdIdx);
-            ImGui::SetNextItemWidth(140.0f);
-            ImGui::InputInt("BTK index (-1 = none)", &btkIdx);
-            if (ImGui::Button("Apply to placeholder")) {
-                snprintf(arcKeep, sizeof(arcKeep), "%s", arcBuf);
-                dItem_itemResource& row = dItem_data::item_resource[dItemNo_LIGHT_DROP_e];
-                row.mArcName = arcKeep;
-                row.mBmdName = static_cast<s16>(bmdIdx);
-                row.mBtkName = static_cast<s16>(btkIdx);
-                row.mBckName = -1;
-                row.mBrkName = -1;
-                row.mBtpName = -1;
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Spawn get demo")) {
-                daPy_py_c* player = daPy_getPlayerActorClass();
-                if (player != NULL) {
-                    cXyz pos = player->current.pos;
-                    fopAcM_createItemForTrBoxDemo(&pos, dItemNo_LIGHT_DROP_e, -1,
-                                                  fopAcM_GetRoomNo(player), NULL, NULL);
-                }
-            }
-            if (arcKeep[0] != '\0') {
-                ImGui::TextDisabled("placeholder -> %s bmd %d btk %d", arcKeep, bmdIdx, btkIdx);
-            }
         }
         ImGui::End();
     }
