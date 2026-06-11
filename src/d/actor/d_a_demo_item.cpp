@@ -419,7 +419,7 @@ void daDitem_c::set_mtx() {
     // Archipelago: setBaseTRMtx replaces the whole base transform, so the actor scale
     // never reaches the model - bake the placeholder shrink into the matrix instead.
     if (m_itemNo == dusk::archipelago::kPlaceholderItemNo) {
-        mDoMtx_stack_c::scaleM(0.12f, 0.12f, 0.12f);
+        mDoMtx_stack_c::scaleM(0.6f, 0.6f, 0.6f);
     }
     mpModel->setBaseTRMtx(mDoMtx_stack_c::get());
 }
@@ -502,8 +502,8 @@ int daDitem_c::create() {
         // directly: the execute() chase toward mMaxScale only runs under chkDraw(),
         // which doesn't cover the whole get-demo.
         if (m_itemNo == dusk::archipelago::kPlaceholderItemNo) {
-            mMaxScale = 0.12f;
-            scale.setall(0.12f);
+            mMaxScale = 0.6f;
+            scale.setall(0.6f);
         }
 
         OS_REPORT("DEMOITEM PARAM:%x\n", fopAcM_GetParam(this));
