@@ -13,7 +13,9 @@
 #include "SSystem/SComponent/c_counter.h"
 #include <cstring>
 
-#include "dusk/string.hpp"
+#if TARGET_PC
+#include "helpers/string.hpp"
+#endif
 
 namespace {
 static u8 event_debug_evnt() {
@@ -231,7 +233,7 @@ int dEvt_control_c::commonCheck(dEvt_order_c* order, u16 condition, u16 command)
 }
 
 int dEvt_control_c::talkCheck(dEvt_order_c* order) {
-    char* eventname = "DEFAULT_TALK";
+    DUSK_CONST char* eventname = "DEFAULT_TALK";
     fopAc_ac_c* actor = order->mpTargetActor;
     if ((fopAcM_GetName(actor) == fpcNm_Tag_Mhint_e && ((daTagMhint_c*)actor)->checkNoAttention()) ||
         (fopAcM_GetName(actor) == fpcNm_Tag_Mstop_e && ((daTagMstop_c*)actor)->checkNoAttention()) ||
@@ -851,7 +853,7 @@ void dEvt_control_c::setSkipProc(void* skipActor, dEvt_SkipCb skipCb, int skipPa
     mSkipParameter = skipParameter;
 }
 
-void dEvt_control_c::setSkipZev(void* skipActor, char* eventName) {
+void dEvt_control_c::setSkipZev(void* skipActor, DUSK_CONST char* eventName) {
     setSkipProc(skipActor, dEv_defaultSkipZev, 1);
     SAFE_STRCPY(mSkipEventName, eventName);
 }
@@ -1307,7 +1309,7 @@ dEvt_info_c::dEvt_info_c() {
     mIndex = 0;
 }
 
-void dEvt_info_c::setEventName(char* name) {
+void dEvt_info_c::setEventName(DUSK_CONST char* name) {
     if (name == NULL) {
         mEventId = -1;
     } else {

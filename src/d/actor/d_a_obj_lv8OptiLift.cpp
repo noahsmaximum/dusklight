@@ -12,7 +12,7 @@
 #include "d/d_path.h"
 
 #if TARGET_PC
-#include "dusk/frame_interpolation.h"
+#include "dusk/interp/frame_interpolation.h"
 #endif
 
 daOptiLift_HIO_c::daOptiLift_HIO_c() {
@@ -38,7 +38,7 @@ void daOptiLift_c::setBaseMtx() {
     mpModel->setBaseTRMtx(mDoMtx_stack_c::get());
 }
 
-const f32 daOptiLift_c::mSpeed[] = {
+DUSK_GAME_DATA const f32 daOptiLift_c::mSpeed[] = {
     5.0f,       6.6666665f, 8.333333f,  10.0f,      11.666667f, 13.333333f, 15.0f,      16.666666f,
     18.333334f, 20.0f,      21.666666f, 23.333334f, 25.0f,      26.666666f, 28.333334f, 3.3333333f,
 };
@@ -417,7 +417,7 @@ void daOptiLift_c::setNextPoint() {
 }
 
 #if TARGET_PC
-static void daOptiLift_interp_callback(bool isSimFrame, void* pUserWork) {
+static void daOptiLift_interp_callback(void* pUserWork) {
     daOptiLift_c* lift = static_cast<daOptiLift_c*>(pUserWork);
     if (lift == NULL || lift->mpModel == NULL) {
         return;
@@ -451,7 +451,7 @@ static void daOptiLift_interp_callback(bool isSimFrame, void* pUserWork) {
 
 int daOptiLift_c::Draw() {
 #if TARGET_PC
-    dusk::frame_interp::add_interpolation_callback(&daOptiLift_interp_callback, this);
+    dusk::interp::add_interpolation_callback(&daOptiLift_interp_callback, this);
 #endif
 
     g_env_light.settingTevStruct(0x10, &current.pos, &tevStr);
@@ -511,13 +511,13 @@ static int daOptiLift_Create(fopAc_ac_c* i_this) {
     return ((daOptiLift_c*)i_this)->create();
 }
 
-static actor_method_class l_daOptiLift_Method = {
+static DUSK_CONST actor_method_class l_daOptiLift_Method = {
     (process_method_func)daOptiLift_Create,  (process_method_func)daOptiLift_Delete,
     (process_method_func)daOptiLift_Execute, (process_method_func)NULL,
     (process_method_func)daOptiLift_Draw,
 };
 
-actor_process_profile_definition g_profile_Obj_Lv8OptiLift = {
+DUSK_PROFILE actor_process_profile_definition DUSK_CONST g_profile_Obj_Lv8OptiLift = {
     /* Layer ID     */ fpcLy_CURRENT_e,
     /* List ID      */ 3,
     /* List Prio    */ fpcPi_CURRENT_e,

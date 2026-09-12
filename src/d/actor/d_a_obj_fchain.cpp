@@ -10,9 +10,14 @@
 #include "JSystem/J3DGraphBase/J3DDrawBuffer.h"
 #include "SSystem/SComponent/c_math.h"
 #include "d/d_com_inf_game.h"
-#include "dusk/frame_interpolation.h"
-#include "dusk/settings.h"
 #include <cstring>
+
+#if TARGET_PC
+#include "dusk/interp/dual_buffer.h"
+
+static const int CHAIN_COUNT = 22;
+typedef dusk::interp::DualBuffer<cXyz, CHAIN_COUNT> ChainInterp;
+#endif
 
 static char const l_arcName[] = "Fchain";
 
@@ -67,10 +72,6 @@ int daObjFchain_c::create() {
             local_48++;
         }
         rv = cPhs_COMPLEATE_e;
-#if TARGET_PC
-        mChainInterpPrevValid = false;
-        mChainInterpCurrValid = false;
-#endif
         break;
     }
     return rv;
@@ -295,26 +296,6 @@ void daObjFchain_shape_c::draw() {
     }
 }
 
-#if TARGET_PC
-static void fchain_interp_callback(bool isSimFrame, void* pUserWork) {
-    static_cast<daObjFchain_c*>(pUserWork)->onInterpCallback();
-}
-
-void daObjFchain_c::onInterpCallback() {
-    if (!mChainInterpPrevValid || !mChainInterpCurrValid) {
-        return;
-    }
-
-    const f32 alpha = dusk::frame_interp::get_interpolation_step();
-
-    for (int i = 0; i < CHAIN_COUNT; i++) {
-        const cXyz& p0 = mChainInterpPrev[i];
-        const cXyz& p1 = mChainInterpCurr[i];
-        field_0x694[i] = p0 + (p1 - p0) * alpha;
-    }
-}
-#endif
-
 int daObjFchain_c::draw() {
     if (field_0x584 != 0) {
         g_env_light.settingTevStruct(0, &current.pos, &tevStr);
@@ -324,18 +305,7 @@ int daObjFchain_c::draw() {
         }
         dComIfGd_getOpaListDark()->entryImm(&mShape, 0);
 
-#if TARGET_PC
-        if (dusk::frame_interp::is_enabled()) {
-            if (mChainInterpCurrValid) {
-                memcpy(mChainInterpPrev, mChainInterpCurr, sizeof(mChainInterpCurr));
-                mChainInterpPrevValid = true;
-            }
-
-            memcpy(mChainInterpCurr, field_0x694, sizeof(mChainInterpCurr));
-            mChainInterpCurrValid = true;
-            dusk::frame_interp::add_interpolation_callback(&fchain_interp_callback, this);
-        }
-#endif
+        IF_DUSK(dusk::interp::get<ChainInterp>(this).writeback(field_0x694, CHAIN_COUNT));
     }
     return 1;
 }
@@ -344,7 +314,7 @@ static int daObjFchain_Draw(daObjFchain_c* i_this) {
     return static_cast<daObjFchain_c*>(i_this)->draw();
 }
 
-static actor_method_class l_daObjFchain_Method = {
+static DUSK_CONST actor_method_class l_daObjFchain_Method = {
     (process_method_func)daObjFchain_Create,
     (process_method_func)daObjFchain_Delete,
     (process_method_func)daObjFchain_Execute,
@@ -352,7 +322,7 @@ static actor_method_class l_daObjFchain_Method = {
     (process_method_func)daObjFchain_Draw,
 };
 
-actor_process_profile_definition g_profile_Obj_Fchain = {
+DUSK_PROFILE actor_process_profile_definition DUSK_CONST g_profile_Obj_Fchain = {
     /* Layer ID     */ fpcLy_CURRENT_e,
     /* List ID      */ 7,
     /* List Prio    */ fpcPi_CURRENT_e,

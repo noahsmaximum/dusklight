@@ -12,8 +12,6 @@
 #include "d/d_bomb.h"
 #include "c/c_damagereaction.h"
 #include "Z2AudioLib/Z2Instances.h"
-#include "dusk/frame_interpolation.h"
-#include "dusk/settings.h"
 
 #define ACTION_STANDBY    0
 #define ACTION_WALK1      1
@@ -65,22 +63,6 @@ static void anm_init(e_mb_class* i_this, int i_anmID, f32 i_morf, u8 i_attr, f32
     i_this->mAnm = i_anmID;
 }
 
-#if TARGET_PC
-static void e_mb_rope_interp_callback(bool isSimFrame, void* pUserWork) {
-    e_mb_class* i_this = (e_mb_class*)pUserWork;
-    if (!i_this->mRopeInterpPrevValid || !i_this->mRopeInterpCurrValid) {
-        return;
-    }
-    const f32 alpha = dusk::frame_interp::get_interpolation_step();
-    cXyz* dst = i_this->mRopeMat.getPos(0);
-    for (int i = 0; i < 16; i++) {
-        const cXyz& p0 = i_this->mRopeInterpPrev[i];
-        const cXyz& p1 = i_this->mRopeInterpCurr[i];
-        dst[i] = p0 + (p1 - p0) * alpha;
-    }
-}
-#endif
-
 static int daE_MB_Draw(e_mb_class* i_this) {
     fopAc_ac_c* a_this = (fopAc_ac_c*)i_this;
 
@@ -104,17 +86,6 @@ static int daE_MB_Draw(e_mb_class* i_this) {
     static GXColor l_color = {0x14, 0x0F, 0x00, 0xFF};
     i_this->mRopeMat.update(16, l_color, &a_this->tevStr);
     dComIfGd_set3DlineMat(&i_this->mRopeMat);
-#if TARGET_PC
-    if (dusk::frame_interp::is_enabled()) {
-        if (i_this->mRopeInterpCurrValid) {
-            memcpy(i_this->mRopeInterpPrev, i_this->mRopeInterpCurr, sizeof(i_this->mRopeInterpCurr));
-            i_this->mRopeInterpPrevValid = true;
-        }
-        memcpy(i_this->mRopeInterpCurr, i_this->mRopeMat.getPos(0), 16 * sizeof(cXyz));
-        i_this->mRopeInterpCurrValid = true;
-        dusk::frame_interp::add_interpolation_callback(&e_mb_rope_interp_callback, i_this);
-    }
-#endif
     return 1;
 }
 
@@ -763,7 +734,7 @@ static int daE_MB_Create(fopAc_ac_c* i_this) {
     return phase_state;
 }
 
-static actor_method_class l_daE_MB_Method = {
+static DUSK_CONST actor_method_class l_daE_MB_Method = {
     (process_method_func)daE_MB_Create,
     (process_method_func)daE_MB_Delete,
     (process_method_func)daE_MB_Execute,
@@ -771,7 +742,7 @@ static actor_method_class l_daE_MB_Method = {
     (process_method_func)daE_MB_Draw,
 };
 
-actor_process_profile_definition g_profile_E_MB = {
+DUSK_PROFILE actor_process_profile_definition DUSK_CONST g_profile_E_MB = {
     /* Layer ID     */ fpcLy_CURRENT_e,
     /* List ID      */ 7,
     /* List Prio    */ fpcPi_CURRENT_e,

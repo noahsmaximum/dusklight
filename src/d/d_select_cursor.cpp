@@ -5,8 +5,11 @@
 #include "d/d_com_inf_game.h"
 #include "JSystem/J2DGraph/J2DAnimation.h"
 #include "JSystem/J2DGraph/J2DAnmLoader.h"
-#include "dusk/frame_interpolation.h"
 #include <cstring>
+
+#if TARGET_PC
+#include "dusk/interp/frame_interpolation.h"
+#endif
 
 dSelect_cursorHIO_c::dSelect_cursorHIO_c() {
     field_0x8 = 1.0f;
@@ -20,35 +23,35 @@ dSelect_cursorHIO_c::dSelect_cursorHIO_c() {
 }
 
 dSelect_cursor_c::dSelect_cursor_c(u8 param_0, f32 param_1, JKRArchive* param_2) {
-    static char* blo_name[4] = {
+    static DUSK_CONST char* blo_name[4] = {
         "zelda_select_cursor_4parts.blo",
         "zelda_store_select_icon.blo",
         "zelda_map_screen_portal_icon.blo",
         "zelda_map_screen_batsumark.blo",
     };
 
-    static char* bck_name[4] = {
+    static DUSK_CONST char* bck_name[4] = {
         "",
         "zelda_store_select_icon.bck",
         "",
         "",
     };
 
-    static char* bpk_name[4] = {
+    static DUSK_CONST char* bpk_name[4] = {
         "zelda_select_cursor_4parts.bpk",
         "zelda_store_select_icon.bpk",
         "zelda_map_screen_portal_icon.bpk",
         "zelda_map_screen_batsumark.bpk",
     };
 
-    static char* btk_name[4] = {
+    static DUSK_CONST char* btk_name[4] = {
         "zelda_select_cursor_4parts.btk",
         "zelda_store_select_icon.btk",
         "",
         "",
     };
 
-    static char* btk2_name[4] = {
+    static DUSK_CONST char* btk2_name[4] = {
         "",
         "zelda_store_select_icon_02.btk",
         "",
@@ -281,20 +284,17 @@ void dSelect_cursor_c::update() {
     if (mUpdateFlag) {
         if (field_0x30) {
             if (chkPlayAnime(0)) {
-#ifdef TARGET_PC
-                if (dusk::frame_interp::get_ui_tick_pending())
-#endif
-                {
-                    if (mNameIdx == 1) {
-                        field_0x44 += mpCursorHIO->field_0x8 * fVar1;
-                    } else {
-                        field_0x44 += fVar1;
-                    }
-
-                    if (field_0x44 >= field_0x30->getFrameMax()) {
-                        field_0x44 -= field_0x30->getFrameMax();
-                    }
+                IF_DUSK_BLOCK(dusk::interp::get_ui_tick_pending())
+                if (mNameIdx == 1) {
+                    field_0x44 += mpCursorHIO->field_0x8 * fVar1;
+                } else {
+                    field_0x44 += fVar1;
                 }
+
+                if (field_0x44 >= field_0x30->getFrameMax()) {
+                    field_0x44 -= field_0x30->getFrameMax();
+                }
+                IF_DUSK_BLOCK_END
 
                 field_0x30->setFrame(field_0x44);
                 setBpkAnimation(field_0x30);
@@ -310,19 +310,16 @@ void dSelect_cursor_c::update() {
         for (int i = 0; i < 2; i++) {
             if (field_0x34[i]) {
                 if ((i == 0 && chkPlayAnime(2)) || (i == 1 && chkPlayAnime(3))) {
-#ifdef TARGET_PC
-                    if (dusk::frame_interp::get_ui_tick_pending())
-#endif
-                    {
-                        if (mNameIdx == 1) {
-                            field_0x48[i] += mpCursorHIO->field_0x8 * fVar1;
-                        } else {
-                            field_0x48[i] += fVar1;
-                        }
-                        if (field_0x48[i] >= field_0x34[i]->getFrameMax()) {
-                            field_0x48[i] -= field_0x34[i]->getFrameMax();
-                        }
+                    IF_DUSK_BLOCK(dusk::interp::get_ui_tick_pending())
+                    if (mNameIdx == 1) {
+                        field_0x48[i] += mpCursorHIO->field_0x8 * fVar1;
+                    } else {
+                        field_0x48[i] += fVar1;
                     }
+                    if (field_0x48[i] >= field_0x34[i]->getFrameMax()) {
+                        field_0x48[i] -= field_0x34[i]->getFrameMax();
+                    }
+                    IF_DUSK_BLOCK_END
 
                     field_0x34[i]->setFrame(field_0x48[i]);
                 }
@@ -331,19 +328,16 @@ void dSelect_cursor_c::update() {
         }
 
         if (field_0x2C && chkPlayAnime(1)) {
-#ifdef TARGET_PC
-            if (dusk::frame_interp::get_ui_tick_pending())
-#endif
-            {
-                if (mNameIdx == 1) {
-                    field_0x40 += mpCursorHIO->field_0x8 * fVar1;
-                } else {
-                    field_0x40 += fVar1;
-                }
-                if (field_0x40 >= field_0x2C->getFrameMax()) {
-                    field_0x40 -= field_0x2C->getFrameMax();
-                }
+            IF_DUSK_BLOCK(dusk::interp::get_ui_tick_pending())
+            if (mNameIdx == 1) {
+                field_0x40 += mpCursorHIO->field_0x8 * fVar1;
+            } else {
+                field_0x40 += fVar1;
             }
+            if (field_0x40 >= field_0x2C->getFrameMax()) {
+                field_0x40 -= field_0x2C->getFrameMax();
+            }
+            IF_DUSK_BLOCK_END
 
             field_0x2C->setFrame(field_0x40);
             setBckAnimation(field_0x2C);
@@ -351,12 +345,9 @@ void dSelect_cursor_c::update() {
         }
 
         if (chkPlayAnime(1) && mNameIdx == 0) {
-#ifdef TARGET_PC
-            if (dusk::frame_interp::get_ui_tick_pending())
-#endif
-            {
-                setCursorAnimation();
-            }
+            IF_DUSK_BLOCK(dusk::interp::get_ui_tick_pending())
+            setCursorAnimation();
+            IF_DUSK_BLOCK_END
         }
 
         mpScreen->animation();

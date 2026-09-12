@@ -51,7 +51,7 @@ public:
 daObjFlag2_Hio_c M_hio;
 #endif
 
-daObjFlag2_Attr_c const daObjFlag2_c::M_attr = {
+DUSK_GAME_DATA daObjFlag2_Attr_c const daObjFlag2_c::M_attr = {
     -2.0f, 0.74f, 0.68f, 40.0f, 100.0f,
 };
 
@@ -101,7 +101,7 @@ static f32 l_texCoord[42] = {
     0.8f, 0.9f, 1.0,  0.0,  1.0,  0.2f, 1.0,  0.4f, 1.0,  0.6f, 1.0,  0.8f, 1.0,  1.0,
 };
 
-static u8 l_pennant_flagDL[152] ATTRIBUTE_ALIGN(32) = {
+ATTRIBUTE_ALIGN(32) static u8 l_pennant_flagDL[152] = {
     0x98, 0x00, 0x0B, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x04, 0x04, 0x04, 0x05,
     0x05, 0x05, 0x08, 0x08, 0x08, 0x09, 0x09, 0x09, 0x0D, 0x0D, 0x0D, 0x0E, 0x0E, 0x0E, 0x13, 0x13,
     0x13, 0x14, 0x14, 0x14, 0x98, 0x00, 0x09, 0x01, 0x01, 0x01, 0x03, 0x03, 0x03, 0x04, 0x04, 0x04,
@@ -261,6 +261,7 @@ void FlagCloth_c::execute() {
 }
 
 void FlagCloth_c::draw() {
+    ZoneScoped;
     j3dSys.reinitGX();
     GXSetNumIndStages(0);
     dKy_setLight_again();
@@ -498,7 +499,7 @@ static int daObjFlag2_Create(fopAc_ac_c* i_this) {
     return static_cast<daObjFlag2_c*>(i_this)->create();
 }
 
-static actor_method_class l_daObjFlag2_Method = {
+static DUSK_CONST actor_method_class l_daObjFlag2_Method = {
     (process_method_func)daObjFlag2_Create,
     (process_method_func)daObjFlag2_Delete,
     (process_method_func)daObjFlag2_Execute,
@@ -506,7 +507,7 @@ static actor_method_class l_daObjFlag2_Method = {
     (process_method_func)daObjFlag2_Draw,
 };
 
-actor_process_profile_definition g_profile_Obj_Flag2 = {
+DUSK_PROFILE actor_process_profile_definition DUSK_CONST g_profile_Obj_Flag2 = {
     /* Layer ID     */ fpcLy_CURRENT_e,
     /* List ID      */ 7,
     /* List Prio    */ fpcPi_CURRENT_e,

@@ -15,6 +15,10 @@
 #include "SSystem/SComponent/c_math.h"
 #include "Z2AudioLib/Z2Instances.h"
 
+#if TARGET_PC
+#include "dusk/interp/frame_interpolation.h"
+#endif
+
 static bool hio_set;
 
 static daE_Bee_HIO_c l_HIO;
@@ -50,6 +54,26 @@ static int daE_Bee_Draw(e_bee_class* i_this) {
     return 1;
 }
 
+#if TARGET_PC
+static void bee_interp(bee_s* i_bee) {
+    if (!dusk::interp::is_enabled()) {
+        return;
+    }
+
+    J3DModel* models[] = {
+        i_bee->mpModel1,
+        i_bee->mpModel2,
+        i_bee->mpModel3,
+        i_bee->mpModel4,
+    };
+    MtxP mtx = mDoMtx_stack_c::get();
+    for (int i = 0; i < 4; i++) {
+        models[i]->setBaseTRMtx(mtx);
+        models[i]->calc();
+    }
+}
+#endif
+
 static void bee_mtxset(bee_s* i_bee) {
     mDoMtx_stack_c::transS(i_bee->mPos.x, i_bee->mPos.y, i_bee->mPos.z);
     mDoMtx_stack_c::YrotM(i_bee->mAngle.y);
@@ -62,6 +86,7 @@ static void bee_mtxset(bee_s* i_bee) {
     } else {
         i_bee->mpModel2->setBaseTRMtx(mDoMtx_stack_c::get());
     }
+    IF_DUSK(bee_interp(i_bee));
 }
 
 static void bee_ground_ang_set(bee_s* i_bee) {
@@ -332,6 +357,7 @@ static void bee_nest_action(e_bee_class* i_this, bee_s* i_bee, s8 i_nestHealth) 
             i_bee->mpModel4->setBaseTRMtx(mDoMtx_stack_c::get());
         }
     }
+    IF_DUSK(bee_interp(i_bee));
 
     if (i_nestHealth == 1) {
         i_bee->mAction = bee_s::ACT_FLY;
@@ -762,7 +788,7 @@ static cPhs_Step daE_Bee_Create(fopAc_ac_c* i_this) {
         _this->mCounter = fopAcM_GetID(i_this);
 
         _this->mCcStts.Init(0, 0, i_this);
-        static dCcD_SrcCyl cc_cyl_src = {
+        static DUSK_CONSTEXPR dCcD_SrcCyl cc_cyl_src = {
             {
                 {0x0, {{0x0, 0x0, 0x0}, {0x410022, 0x23}, 0x0}}, // mObj
                 {dCcD_SE_NONE, 0x0, 0x0, 0x0, 0x0}, // mGObjAt
@@ -807,7 +833,7 @@ static cPhs_Step daE_Bee_Create(fopAc_ac_c* i_this) {
     return step;
 }
 
-static actor_method_class l_daE_Bee_Method = {
+static DUSK_CONST actor_method_class l_daE_Bee_Method = {
     (process_method_func)daE_Bee_Create,
     (process_method_func)daE_Bee_Delete,
     (process_method_func)daE_Bee_Execute,
@@ -815,7 +841,7 @@ static actor_method_class l_daE_Bee_Method = {
     (process_method_func)daE_Bee_Draw,
 };
 
-actor_process_profile_definition g_profile_E_BEE = {
+DUSK_PROFILE actor_process_profile_definition DUSK_CONST g_profile_E_BEE = {
     /* Layer ID     */ fpcLy_CURRENT_e,
     /* List ID      */ 7,
     /* List Prio    */ fpcPi_CURRENT_e,

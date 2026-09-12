@@ -99,7 +99,7 @@ public:
     /* 0x0000 */ fopEn_enemy_c enemy;                   ///< @brief Base enemy class instance.
     /* 0x05AC */ request_of_phase_process_class phase;  ///< @brief Phase process request handler.
     /* 0x05B4 */ s16 ride_mode;  ///< @brief Current sub-action mode within the run action.
-    /* 0x05B8 */ char* resName;   ///< @brief Resource name for loading models/animations.
+    /* 0x05B8 */ char DUSK_CONST* resName;   ///< @brief Resource name for loading models/animations.
     /* 0x05BC */ u8 arg0;        ///< @brief Creation parameter 1.
     /* 0x05BD */ u8 arg1;       ///< @brief Creation parameter 2.
     /* 0x05BE */ u8 field_0x5be;
@@ -221,12 +221,6 @@ public:
     /* 0x17E4 */ u8 field_0x17e4[0x17e8 - 0x17e4];
     /* 0x17E8 */ f32 ride_speed_max;  ///< @brief Speed rate for riding calculations.
 #if TARGET_PC
-    cXyz himo_mat_interp_prev[2][16];
-    cXyz himo_mat_interp_curr[2][16];
-    cXyz himo_tex_interp_prev[2];
-    cXyz himo_tex_interp_curr[2];
-    bool himo_interp_prev_valid;
-    bool himo_interp_curr_valid;
     s8 demo_cam_sync_ticks;
 #endif
 };

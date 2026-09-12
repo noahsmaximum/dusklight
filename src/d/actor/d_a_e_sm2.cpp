@@ -15,7 +15,7 @@
 #include <cstring>
 
 #if TARGET_PC
-#include "dusk/frame_interpolation.h"
+#include "dusk/interp/frame_interpolation.h"
 #endif
 
 class daE_SM2_HIO_c : public fOpAcm_HIO_entry_c {
@@ -81,7 +81,7 @@ static int nodeCallBack(J3DJoint* i_joint, int param_1) {
 }
 
 #if TARGET_PC
-static void daE_SM2_interp_callback(bool isSimFrame, void* pUserWork) {
+static void daE_SM2_interp_callback(void* pUserWork) {
     e_sm2_class* i_this = static_cast<e_sm2_class*>(pUserWork);
     if (i_this == NULL) {
         return;
@@ -133,7 +133,7 @@ static int daE_SM2_Draw(e_sm2_class* i_this) {
     fopAc_ac_c* actor = (fopAc_ac_c*)&i_this->enemy;
 
 #if TARGET_PC
-    dusk::frame_interp::add_interpolation_callback(&daE_SM2_interp_callback, i_this);
+    dusk::interp::add_interpolation_callback(&daE_SM2_interp_callback, i_this);
 #endif
 
     g_env_light.settingTevStruct(0, &actor->current.pos, &actor->tevStr);
@@ -923,6 +923,14 @@ static void damage_check(e_sm2_class* i_this) {
                         sm_hit_actor->mode = 10;
 
                         u8 new_color_type = new_col_d[(sm_hit_actor->type * 7) + i_this->type];
+                        #if TARGET_PC
+                        if (dusk::getSettings().game.restoreWiiGlitches &&
+                            ((sm_hit_actor->type == TYPE_BLUE && i_this->type == TYPE_YELLOW) ||
+                                (sm_hit_actor->type == TYPE_YELLOW && i_this->type == TYPE_BLUE)))
+                        {
+                            new_color_type = TYPE_GREEN;
+                        }
+                        #endif
                         i_this->type = new_color_type;
                         sm_hit_actor->type = new_color_type;
 
@@ -1695,7 +1703,7 @@ static int daE_SM2_Create(fopAc_ac_c* i_this) {
     return phase_state;
 }
 
-static actor_method_class l_daE_SM2_Method = {
+static DUSK_CONST actor_method_class l_daE_SM2_Method = {
     (process_method_func)daE_SM2_Create,
     (process_method_func)daE_SM2_Delete,
     (process_method_func)daE_SM2_Execute,
@@ -1703,7 +1711,7 @@ static actor_method_class l_daE_SM2_Method = {
     (process_method_func)daE_SM2_Draw,
 };
 
-actor_process_profile_definition g_profile_E_SM2 = {
+DUSK_PROFILE actor_process_profile_definition DUSK_CONST g_profile_E_SM2 = {
     /* Layer ID     */ fpcLy_CURRENT_e,
     /* List ID      */ 7,
     /* List Prio    */ fpcPi_CURRENT_e,

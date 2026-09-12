@@ -18,10 +18,12 @@
 #include "m_Do/m_Do_controller_pad.h"
 #include "m_Do/m_Do_graphic.h"
 #include "res/Object/Always.h"
-#include "dusk/dusk.h"
-#include "dusk/frame_interpolation.h"
 #include <cstring>
 
+#if TARGET_PC
+#include "dusk/dusk.h"
+#include "dusk/interp/frame_interpolation.h"
+#endif
 
 class daE_WB_HIO_c : public JORReflexible {
 public:
@@ -185,30 +187,6 @@ static s8 lbl_244_bss_47;
 static bool hio_set;
 
 static daE_WB_HIO_c l_HIO;
-
-#if TARGET_PC
-static void e_wb_rein_interp_callback(bool isSimFrame, void* pUserWork) {
-    e_wb_class* i_this = (e_wb_class*)pUserWork;
-    if (!i_this->himo_interp_prev_valid || !i_this->himo_interp_curr_valid) {
-        return;
-    }
-    const f32 alpha = dusk::frame_interp::get_interpolation_step();
-    for (int r = 0; r < 2; r++) {
-        cXyz* dst = i_this->himo_mat[r].getPos(0);
-        for (int i = 0; i < 16; i++) {
-            const cXyz& p0 = i_this->himo_mat_interp_prev[r][i];
-            const cXyz& p1 = i_this->himo_mat_interp_curr[r][i];
-            dst[i] = p0 + (p1 - p0) * alpha;
-        }
-    }
-    cXyz* dst = i_this->himo_tex.getPos(0);
-    for (int i = 0; i < 2; i++) {
-        const cXyz& p0 = i_this->himo_tex_interp_prev[i];
-        const cXyz& p1 = i_this->himo_tex_interp_curr[i];
-        dst[i] = p0 + (p1 - p0) * alpha;
-    }
-}
-#endif
 
 static void himo_control1(e_wb_class* i_this, cXyz* i_pos, int i_no, s8 param_3) {
     fopEn_enemy_c* enemy = &i_this->enemy;
@@ -534,21 +512,6 @@ static int daE_WB_Draw(e_wb_class* i_this) {
         dComIfGd_set3DlineMat(&i_this->himo_mat[1]);
         i_this->himo_tex.update(2, l_color, &actor->tevStr);
         dComIfGd_set3DlineMat(&i_this->himo_tex);
-#if TARGET_PC
-        if (dusk::frame_interp::is_enabled()) {
-            if (i_this->himo_interp_curr_valid) {
-                memcpy(i_this->himo_mat_interp_prev, i_this->himo_mat_interp_curr, sizeof(i_this->himo_mat_interp_curr));
-                memcpy(i_this->himo_tex_interp_prev, i_this->himo_tex_interp_curr, sizeof(i_this->himo_tex_interp_curr));
-                i_this->himo_interp_prev_valid = true;
-            }
-            for (int r = 0; r < 2; r++) {
-                memcpy(i_this->himo_mat_interp_curr[r], i_this->himo_mat[r].getPos(0), 16 * sizeof(cXyz));
-            }
-            memcpy(i_this->himo_tex_interp_curr, i_this->himo_tex.getPos(0), 2 * sizeof(cXyz));
-            i_this->himo_interp_curr_valid = true;
-            dusk::frame_interp::add_interpolation_callback(&e_wb_rein_interp_callback, i_this);
-        }
-#endif
     }
 
     return 1;
@@ -603,8 +566,8 @@ static s8 gake_check(e_wb_class* i_this) {
     cXyz mae;
     cXyz ato;
 
-    static f32 chk_x[4] = {14257.0f, 34775.0f, -22864.0f, -11627.0f};
-    static f32 chk_z[4] = {20075.0f, -16467.0f, 9823.0f, 22601.0f};
+    static DUSK_CONSTEXPR f32 chk_x[4] = {14257.0f, 34775.0f, -22864.0f, -11627.0f};
+    static DUSK_CONSTEXPR f32 chk_z[4] = {20075.0f, -16467.0f, 9823.0f, 22601.0f};
 
     if (lbl_244_bss_46 != 0) {
         if (!daAlink_getAlinkActorClass()->checkBoarRideOwn(actor) &&
@@ -743,8 +706,8 @@ static int e_wb_saku_check_sub(e_wb_class* i_this, s16 yaa) {
 static int e_wb_saku_check(e_wb_class* i_this) {
     e_wb_class* unused = i_this;
     int saku = false;
-    static s16 yaa[3] = {0, -4096, 4096};
-    static u32 saku_bit[3] = {1, 2, 4};
+    static DUSK_CONSTEXPR s16 yaa[3] = {0, -4096, 4096};
+    static DUSK_CONSTEXPR u32 saku_bit[3] = {1, 2, 4};
 
     for (int i = 0; i < 3; i++) {
         if (e_wb_saku_check_sub(i_this, yaa[i])) {
@@ -1813,18 +1776,18 @@ static void e_wb_b_run(e_wb_class* i_this) {
 
 static void arrow_rd_set(e_wb_class* i_this) {
     fopAc_ac_c* actor = (fopAc_ac_c*)i_this;
-    static cXyz arrow_rd_pos[1] = {cXyz(36460.0f, 1040.0f, -17020.0f)};
+    static DUSK_CONSTEXPR cXyz arrow_rd_pos[1] = {cXyz(36460.0f, 1040.0f, -17020.0f)};
     for (int i = 0; i < 1; i++) {
         fopAcM_create(fpcNm_E_RD_e, 0xff00a3ff, &arrow_rd_pos[i], fopAcM_GetRoomNo(actor), 0, 0, -1);
     }
 }
 
-static cXyz saku_p(34800.0f, 0.0f, -14900.0f);
+static DUSK_CONSTEXPR cXyz saku_p(34800.0f, 0.0f, -14900.0f);
 
-static cXyz saku_p2(34800.0f, 0.0f, -37200.0f);
+static DUSK_CONSTEXPR cXyz saku_p2(34800.0f, 0.0f, -37200.0f);
 
 static void e_wb_b_ikki(e_wb_class* i_this) {
-    static cXyz ikki_pos[2] = {cXyz(34789.0f, -290.0f, -36200.0f),
+    static DUSK_CONSTEXPR cXyz ikki_pos[2] = {cXyz(34789.0f, -290.0f, -36200.0f),
                                cXyz(34789.0f, -290.0f, -16600.0f)};
 
     fopAc_ac_c* actor = (fopAc_ac_c*)i_this;
@@ -2036,18 +1999,18 @@ static void e_wb_b_ikki(e_wb_class* i_this) {
 
     if (i_this->saku_burn != 0) {
         if (i_this->saku_burn == 1) {
-            static cXyz f_pos[2] = {cXyz(34800.0f, -300.0f, -15150.0f),
+            static DUSK_CONSTEXPR cXyz f_pos[2] = {cXyz(34800.0f, -300.0f, -15150.0f),
                                     cXyz(34800.0f, -300.0f, -37200.0f)};
             csXyz angl;
             for (int i = 0; i < 2; i++) {
-                static s16 f_ya[2] = {
+                static DUSK_CONSTEXPR s16 f_ya[2] = {
                     -0x8000,
                     0x0000,
                 };
 
                 angl.set(0, f_ya[i], 0);
                 for (int j = 0; j < 2; j++) {
-                    static u16 f_id[2] = {
+                    static DUSK_CONSTEXPR u16 f_id[2] = {
                         dPa_RM(ID_ZI_S_UMASAKU_BURN_A),
                         dPa_RM(ID_ZI_S_UMASAKU_BURN_B),
                     };
@@ -2089,7 +2052,7 @@ static void e_wb_b_ikki_end(e_wb_class* i_this) {
 }
 
 static void e_wb_b_ikki2(e_wb_class* i_this) {
-    static cXyz ikki2_pos[2] = {cXyz(-93620.0f, -5750.0f, 48944.0f),
+    static DUSK_CONSTEXPR cXyz ikki2_pos[2] = {cXyz(-93620.0f, -5750.0f, 48944.0f),
                                 cXyz(-93620.0f, -5750.0f, 28423.0f)};
 
     fopAc_ac_c* actor = (fopAc_ac_c*)i_this;
@@ -2960,12 +2923,12 @@ static void effect_set(e_wb_class* i_this) {
         J3DModel* model = i_this->anm_p->getModel();
         int foot_idx = (i_this->counter & 2) >> 1;
 
-        static int footd[2] = {
+        static DUSK_CONSTEXPR int footd[2] = {
             6,
             10,
         };
 
-        static int footd_B[2] = {
+        static DUSK_CONSTEXPR int footd_B[2] = {
             6,
             10,
         };
@@ -3076,13 +3039,13 @@ static void effect_set(e_wb_class* i_this) {
         cXyz scale(v, v, v);
         csXyz angle(0, 0, 0);
 
-        static u16 w_eff_name[3] = {
+        static DUSK_CONSTEXPR u16 w_eff_name[3] = {
             dPa_RM(ID_ZI_S_ENEMY_RUNWTRA_A),
             dPa_RM(ID_ZI_S_ENEMY_RUNWTRA_B),
             dPa_RM(ID_ZI_S_ENEMY_RUNWTRA_C),
         };
 
-        static u16 w_eff_name2[3] = {
+        static DUSK_CONSTEXPR u16 w_eff_name2[3] = {
             dPa_RM(ID_ZI_S_ENEMY_DOWNWTRA_A),
             dPa_RM(ID_ZI_S_ENEMY_DOWNWTRA_B),
             dPa_RM(ID_ZI_S_ENEMY_DOWNWTRA_C),
@@ -3100,10 +3063,10 @@ static void effect_set(e_wb_class* i_this) {
     }
 
     if (is_water && i_this->field_0x1721 != 0) {
-        static cXyz sc(4.0f, 4.0f, 4.0f);
+        static DUSK_CONSTEXPR cXyz sc(4.0f, 4.0f, 4.0f);
 
         for (int i = 0; i < 4; i++) {
-            static u16 w_eff_id[4] = {
+            static DUSK_CONSTEXPR u16 w_eff_id[4] = {
                 ID_ZI_J_DOWNWTRA_A,
                 ID_ZI_J_DOWNWTRA_B,
                 ID_ZI_J_DOWNWTRA_C,
@@ -3339,13 +3302,13 @@ static s8 e_wb_c_run(e_wb_class* i_this) {
 
 
         if (!behind_obstacle) {
-            static cXyz sh_pos[3] = {
+            static DUSK_CONSTEXPR cXyz sh_pos[3] = {
                 cXyz(400.0f, 200.0f, 200.0f),
                 cXyz(-400.0f, 200.0f, 300.0f),
                 cXyz(0.0f, 200.0f, -700.0f),
             };
 
-            static cXyz sh_posH[3] = {
+            static DUSK_CONSTEXPR cXyz sh_posH[3] = {
                 cXyz(150.0f, 200.0f, 200.0f),
                 cXyz(-150.0f, 200.0f, 300.0f),
                 cXyz(0.0f, 200.0f, -700.0f)
@@ -4542,9 +4505,7 @@ static void demo_camera(e_wb_class* i_this) {
             i_this->demo_cam_way_spd.z = fabsf(i_this->demo_cam_way.z - i_this->demo_cam_ctr.z);
             i_this->demo_cam_morf = 0;
             pla->setPlayerPosAndAngle(&pla->current.pos, pla->shape_angle.y - 4000, 0);
-#if TARGET_PC
-            dusk::frame_interp::request_presentation_sync();
-#endif
+            IF_DUSK(dusk::interp::request_presentation_sync());
         }
         if (i_this->demo_timer == 345) {
             daPy_getPlayerActorClass()->setThrowDamage(boss->enemy.shape_angle.y - 8000 + TREG_S(8),
@@ -4791,9 +4752,7 @@ static void demo_camera(e_wb_class* i_this) {
                     i_this->demo_cam_eye.x += 300.0f + VREG_F(8);
                     i_this->demo_cam_eye.y += 150.0f + VREG_F(9);
                     i_this->demo_cam_eye.z -= 1400.0f + VREG_F(10);
-#if TARGET_PC
-                    dusk::frame_interp::request_presentation_sync();
-#endif
+                    IF_DUSK(dusk::interp::request_presentation_sync());
                 }
             } else {
                 i_this->demo_cam_eye = enemy->current.pos;
@@ -4893,7 +4852,7 @@ static void demo_camera(e_wb_class* i_this) {
                 }
 
                 for (int i = 0; i < 2; i++) {
-                    static u16 key_eno[2] = {
+                    static DUSK_CONSTEXPR u16 key_eno[2] = {
                         dPa_RM(ID_ZM_S_KEYLIGHT00),
                         dPa_RM(ID_ZM_S_KEYLIGHT01),
                     };
@@ -4924,7 +4883,7 @@ static void demo_camera(e_wb_class* i_this) {
     } break;
     case 94: {
         for (int i = 0; i < 2; i++) {
-            static u16 key_eno[2] = {
+            static DUSK_CONSTEXPR u16 key_eno[2] = {
                 dPa_RM(ID_ZM_S_KEYLIGHT00),
                 dPa_RM(ID_ZM_S_KEYLIGHT01),
             };
@@ -5054,7 +5013,7 @@ static void demo_camera(e_wb_class* i_this) {
         i_this->demo_cam_sync_ticks = 2;
     }
     if (i_this->demo_cam_sync_ticks > 0) {
-        dusk::frame_interp::request_presentation_sync();
+        dusk::interp::request_presentation_sync();
         i_this->demo_cam_sync_ticks--;
     }
 #endif
@@ -5482,8 +5441,8 @@ static int daE_WB_Execute(e_wb_class* i_this) {
         
         mae.set(0.0f, 0.0f, 0.0f);
         for (int i = 0; i < 4; i++) {
-            static int foot_no[4] = {5, 24, 9, 20};
-            static int foot_no_B[4] = {5, 28, 9, 23};
+            static DUSK_CONSTEXPR int foot_no[4] = {5, 24, 9, 20};
+            static DUSK_CONSTEXPR int foot_no_B[4] = {5, 28, 9, 23};
 
             if (i_this->leader != 0) {
                 MTXCopy(model->getAnmMtx(foot_no_B[i]), *calc_mtx);
@@ -5713,11 +5672,11 @@ static int daE_WB_Create(fopAc_ac_c* actor) {
                                    fopAcM_GetRoomNo(actor), 0, 0, -1, 0);
             }
 
-            static f32 pass_r[6] = {
+            static DUSK_CONSTEXPR f32 pass_r[6] = {
                 0.0f, 800.0f, 800.0f, -100.0f, -150.0f, -100.0f,
             };
 
-            static f32 x_check_off[6] = {
+            static DUSK_CONSTEXPR f32 x_check_off[6] = {
                 600.0f, -800.0f, 800.0f, -300.0f, 0.0f, 300.0f,
             };
 
@@ -5768,7 +5727,7 @@ static int daE_WB_Create(fopAc_ac_c* actor) {
             }
 
             for (int i = 0; i <= 6; i++) {
-                static dCcD_SrcSph cc_sph_src = {
+                static DUSK_CONSTEXPR dCcD_SrcSph cc_sph_src = {
                     {
                         {0x0, {{0x0, 0x0, 0x0}, {0x486022, 0x3}, 0x75}},  // mObj
                         {dCcD_SE_NONE, 0x0, 0x0, 0x0, 0x0},               // mGObjAt
@@ -5789,7 +5748,7 @@ static int daE_WB_Create(fopAc_ac_c* actor) {
                 }
             }
 
-            static dCcD_SrcSph at_sph_src = {
+            static DUSK_CONSTEXPR dCcD_SrcSph at_sph_src = {
                 {
                     {0x0, {{AT_TYPE_1000, 0x2, 0x1f}, {0x0, 0x0}, 0x0}},  // mObj
                     {dCcD_SE_HARD_BODY, 0x0, 0x0, 0x0, 0x0},              // mGObjAt
@@ -5863,13 +5822,13 @@ static int daE_WB_Create(fopAc_ac_c* actor) {
     return phase_state;
 }
 
-static actor_method_class l_daE_WB_Method = {
+static DUSK_CONST actor_method_class l_daE_WB_Method = {
     (process_method_func)daE_WB_Create,  (process_method_func)daE_WB_Delete,
     (process_method_func)daE_WB_Execute, (process_method_func)daE_WB_IsDelete,
     (process_method_func)daE_WB_Draw,
 };
 
-actor_process_profile_definition g_profile_E_WB = {
+DUSK_PROFILE actor_process_profile_definition DUSK_CONST g_profile_E_WB = {
     /* Layer ID     */ fpcLy_CURRENT_e,
     /* List ID      */ 4,
     /* List Prio    */ fpcPi_CURRENT_e,

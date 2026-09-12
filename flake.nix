@@ -2,6 +2,7 @@
   description = "Dusklight — native PC port of the Twilight Princess decompilation";
 
   inputs.nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+  inputs.self.submodules = true;
 
   outputs =
     { self, nixpkgs }:
@@ -16,37 +17,37 @@
       ];
       forAllSystems = lib.genAttrs supportedSystems;
 
-      dawnVersion = "v20260423.175430";
-      nodVersion = "v2.0.0-alpha.8";
+      dawnVersion = "v20260618.032059";
+      nodVersion = "v2.0.0-alpha.10";
       versionSuffix = "nix-" + (self.shortRev or self.dirtyShortRev or "dirty");
 
       dawnInfo = {
         "x86_64-linux" = {
           triple = "linux-x86_64";
-          hash = "sha256-HXfKTLHtMPwupnFnaflCARtXVPuS/0PoCePXidjE5xs=";
+          hash = "sha256-GFSd573b+VQx/VmFdNQgWDd0V9ayQlcw0Zuopke12ak=";
         };
         "aarch64-linux" = {
           triple = "linux-aarch64";
-          hash = "sha256-34yyFpfqBZUwoFXQ41F0AwAU78FaNihOSY0oriwn6B0=";
+          hash = "sha256-ZaoP7BAjBMnfAv2/AMRi3FNH2ZtyqASCSFyU/oB2Mzg=";
         };
         "aarch64-darwin" = {
           triple = "darwin-arm64";
-          hash = "sha256-eQnzrBp6gjiBek1VYQ9A5W13ClYWrDDKjIqv/7eNTR4=";
+          hash = "sha256-HT+qtlLaSHyoXPrUcXgcTGa877X5YfzbxRD4bJb7i1Y=";
         };
         "x86_64-darwin" = {
           triple = "darwin-x86_64";
-          hash = "sha256-QGWiGdxiI9kci3NPXH6QFFirxn16851zB/w3jqhIBJ4=";
+          hash = "sha256-cUNaCbA7rlKSukDVKGaVEVw0Zt1+mSbaHbmUCMvMVWc=";
         };
       };
 
       nodPrebuiltInfo = {
         "x86_64-linux" = {
           triple = "linux-x86_64";
-          hash = "sha256-mUqvLsbsqaZ+HAjMmHYPYO+MgtanGRTw7Gzn5uXR5rE=";
+          hash = "sha256-FVQWECVA2gWdc+n5OQ/Tvwn8z0qdgjSd1WlFt5HKOec=";
         };
         "aarch64-darwin" = {
           triple = "macos-arm64";
-          hash = "sha256-UPy1ywCcv0K6VJOU3uUelJuUdBh3UNaPRlyP5LOBeDw=";
+          hash = "sha256-8ZEejxksVgShNKUVRCBYaLOp9x/qOC9pAeVrElQUGUk=";
         };
       };
 
@@ -57,15 +58,10 @@
           inherit (pkgs.stdenv.hostPlatform) isDarwin;
           hasNodPrebuilt = nodPrebuiltInfo ? ${system};
 
-          aurora = pkgs.fetchFromGitHub {
-            owner = "encounter";
-            repo = "aurora";
-            rev = "10006618ee493f248b8597e4dfa1d2871d76a1d9";
-            hash = "sha256-lY2xuVyB7aPJ9+2wwLRB3F5U/BuPSxdSpegdG+qNd9o=";
-          };
+          aurora = builtins.pathExists "${self}/extern/aurora/CMakeLists.txt";
 
           dawn = pkgs.fetchzip {
-            url = "https://github.com/encounter/dawn-build/releases/download/${dawnVersion}/dawn-${dawnInfo.${system}.triple}.tar.gz";
+            url = "https://github.com/encounter/dawn/releases/download/${dawnVersion}/dawn-${dawnInfo.${system}.triple}.tar.gz";
             hash = dawnInfo.${system}.hash;
             stripRoot = false;
           };
@@ -84,8 +80,9 @@
               owner = "encounter";
               repo = "nod";
               rev = nodVersion;
-              hash = "sha256-+zrtVzjo0+X/6uMcNUn1+FaSR+jOhrcQSDNBFjw0NDs=";
+              hash = "sha256-r8qDlOVxv5iKiFjJQrcBuL9HVoOM3yEjRVnQIMqaICs=";
             };
+            patches = [ ./fix-cmake-paths.patch ];
             cargoDeps = pkgs.rustPlatform.importCargoLock {
               lockFile = "${finalAttrs.src}/Cargo.lock";
             };
@@ -127,15 +124,23 @@
             NOD_PREBUILT = nod;
             CXXOPTS = pkgs.cxxopts.src;
             JSON = pkgs.nlohmann_json.src;
-            XXHASH = pkgs.xxHash.src;
+            XXHASH = pkgs.xxhash.src;
             ZSTD = pkgs.zstd.src;
+
+
+            MINIZ = pkgs.fetchzip {
+              url = "https://github.com/richgel999/miniz/releases/download/3.0.2/miniz-3.0.2.zip";
+              hash = "sha256-DXysXkQEmoDAMMg1F8KexkwpXNyiHNzLJqXR9SMEkxk=";
+              stripRoot = false;
+            };
+
             FMT = pkgs.fetchzip {
-              url = "https://github.com/fmtlib/fmt/archive/refs/tags/11.1.4.tar.gz";
-              hash = "sha256-sUbxlYi/Aupaox3JjWFqXIjcaQa0LFjclQAOleT+FRA=";
+              url = "https://github.com/fmtlib/fmt/archive/refs/tags/12.1.0.tar.gz";
+              hash = "sha256-ZmI1Dv0ZabPlxa02OpERI47jp7zFfjpeWCy1WyuPYZ0=";
             };
             TRACY = pkgs.fetchzip {
-              url = "https://github.com/wolfpld/tracy/archive/a64b9a20294d59421a2f57aeca3c6383d8c48169.tar.gz";
-              hash = "sha256-hbNGOsGeyGSvCJ2No8RkwOib1lX2on3vNZSzyVkZdXw=";
+              url = "https://github.com/wolfpld/tracy/archive/6789e7d6f9a65ec98926b602097a33a9676d2606.tar.gz";
+              hash = "sha256-Xxyd7G/mnXEPpN+ehmwl0AkAhS3CwObpJNDgcqbdUJg=";
             };
             IMGUI = pkgs.fetchFromGitHub {
               owner = "ocornut";
@@ -153,119 +158,123 @@
             };
           };
 
-          dusklight = pkgs.stdenv.mkDerivation {
-            pname = "dusklight";
-            version = versionSuffix;
-            src = ./.;
+          dusklight =
+            pkgs.stdenv.mkDerivation {
+              pname = "dusklight";
+              version = versionSuffix;
+              src = ./.;
 
-            postUnpack = ''
-              chmod -R u+w "$sourceRoot"
-              rm -rf "$sourceRoot/extern/aurora"
-              mkdir -p "$sourceRoot/extern"
-              cp -r ${aurora} "$sourceRoot/extern/aurora"
-              chmod -R u+w "$sourceRoot/extern/aurora"
-              substituteInPlace "$sourceRoot/extern/aurora/CMakeLists.txt" \
-                --replace-warn "add_subdirectory(tests)" ""
-            '';
+              postUnpack = ''
+                chmod -R u+w "$sourceRoot"
+                substituteInPlace "$sourceRoot/extern/aurora/CMakeLists.txt" \
+                  --replace-warn "add_subdirectory(tests)" ""
+              '';
 
-            nativeBuildInputs = [
-              pkgs.cmake
-              pkgs.ninja
-              pkgs.pkg-config
-              pkgs.python3
-              pkgs.python3Packages.markupsafe
-            ]
-            ++ lib.optionals (!isDarwin) [ pkgs.autoPatchelfHook ];
+                nativeBuildInputs = [
+                  pkgs.cmake
+                  pkgs.ninja
+                  pkgs.pkg-config
+                  pkgs.python3
+                  pkgs.python3Packages.markupsafe
+                ]
+                ++ lib.optionals (!isDarwin) [ pkgs.autoPatchelfHook ];
 
-            buildInputs = [
-              pkgs.sdl3
-              pkgs.freetype
-              pkgs.zstd
-              pkgs.cxxopts
-              pkgs.nlohmann_json
-              pkgs.xxHash
-              pkgs.abseil-cpp
-              pkgs.zlib
-              pkgs.libpng
-              pkgs.libjpeg_turbo
-              pkgs.curl
-              pkgs.openssl
-            ]
-            ++ lib.optionals isDarwin [
-              pkgs.apple-sdk_15
-              pkgs.libiconv
-            ]
-            ++ lib.optionals (!isDarwin) [
-              pkgs.libGL
-              pkgs.libGLU
-              pkgs.libglvnd
-              pkgs.vulkan-loader
-              pkgs.libX11
-              pkgs.libxcb
-              pkgs.libXcursor
-              pkgs.libxi
-              pkgs.libxrandr
-              pkgs.libxscrnsaver
-              pkgs.libxtst
-              pkgs.libxinerama
-              pkgs.libxkbcommon
-              pkgs.wayland
-              pkgs.libdecor
-              pkgs.alsa-lib
-              pkgs.libpulseaudio
-              pkgs.pipewire
-              pkgs.dbus
-              pkgs.udev
-              pkgs.libusb1
-              pkgs.libunwind
-              pkgs.gtk3
-            ];
+                buildInputs = [
+                  pkgs.sdl3
+                  pkgs.freetype
+                  pkgs.zstd
+                  pkgs.cxxopts
+                  pkgs.nlohmann_json
+                  pkgs.xxhash
+                  pkgs.abseil-cpp
+                  pkgs.zlib
+                  pkgs.libpng
+                  pkgs.libjpeg_turbo
+                  pkgs.curl
+                  pkgs.openssl
+                ]
+                ++ lib.optionals isDarwin [
+                  pkgs.apple-sdk_15
+                  pkgs.libiconv
+                ]
+                ++ lib.optionals (!isDarwin) [
+                  pkgs.libGL
+                  pkgs.libGLU
+                  pkgs.libglvnd
+                  pkgs.vulkan-loader
+                  pkgs.libX11
+                  pkgs.libxcb
+                  pkgs.libXcursor
+                  pkgs.libxi
+                  pkgs.libxrandr
+                  pkgs.libxscrnsaver
+                  pkgs.libxtst
+                  pkgs.libxinerama
+                  pkgs.libxkbcommon
+                  pkgs.wayland
+                  pkgs.libdecor
+                  pkgs.alsa-lib
+                  pkgs.libpulseaudio
+                  pkgs.pipewire
+                  pkgs.dbus
+                  pkgs.udev
+                  pkgs.libusb1
+                  pkgs.libunwind
+                  pkgs.gtk3
+                  nod
+                ];
 
-            cmakeBuildType = "RelWithDebInfo";
-            ninjaFlags = [ "dusklight" ];
+                cmakeBuildType = "RelWithDebInfo";
+                ninjaFlags = [ "dusklight" ];
 
-            cmakeFlags = [
-              "-DDUSK_VERSION_OVERRIDE=${versionSuffix}"
-              "-DFETCHCONTENT_FULLY_DISCONNECTED=ON"
-              "-DAURORA_DAWN_PROVIDER=package"
-              "-DAURORA_DAWN_LINKAGE=static"
-              "-DAURORA_NOD_PROVIDER=package"
-              "-DAURORA_NOD_LINKAGE=static"
-              "-DAURORA_SDL3_PROVIDER=system"
-            ]
-            ++ lib.mapAttrsToList (key: src: "-DFETCHCONTENT_SOURCE_DIR_${key}=${src}") fetchContentDirs;
+                cmakeFlags = [
+                  "-DBOREALIS_APP_VERSION_OVERRIDE=${versionSuffix}"
+                  "-DFETCHCONTENT_FULLY_DISCONNECTED=ON"
+                  "-DAURORA_DAWN_PROVIDER=package"
+                  "-DAURORA_DAWN_LINKAGE=static"
+                  "-DAURORA_NOD_PROVIDER=system"
+                  "-DAURORA_SDL3_PROVIDER=system"
+                  "-DBUILD_SHARED_LIBS=OFF"
+                ]
+                ++ lib.mapAttrsToList (key: src: "-DFETCHCONTENT_SOURCE_DIR_${key}=${src}") fetchContentDirs;
 
-            installPhase =
-              if isDarwin then
-                ''
-                  runHook preInstall
-                  mkdir -p "$out/Applications"
-                  cp -r Dusklight.app "$out/Applications/Dusklight.app"
-                  runHook postInstall
-                ''
-              else
-                ''
-                  runHook preInstall
-                  install -Dm755 dusklight "$out/bin/dusklight"
-                  cp -r "$src/res" "$out/bin/res"
-                  install -Dm644 "$src/platforms/freedesktop/dev.twilitrealm.dusk.desktop" \
-                    "$out/share/applications/dev.twilitrealm.dusk.desktop"
-                  for size in 16 32 48 64 128 256 512 1024; do
-                    install -Dm644 "$src/platforms/freedesktop/''${size}x''${size}/apps/dev.twilitrealm.dusk.png" \
-                      "$out/share/icons/hicolor/''${size}x''${size}/apps/dev.twilitrealm.dusk.png"
-                  done
-                  runHook postInstall
+                installPhase =
+                  if isDarwin then
+                    ''
+                      runHook preInstall
+                      mkdir -p "$out/Applications"
+                      cp -r Dusklight.app "$out/Applications/Dusklight.app"
+                      runHook postInstall
+                    ''
+                  else
+                    ''
+                      runHook preInstall
+                      install -Dm755 dusklight "$out/bin/dusklight"
+                      cp -r "$src/res" "$out/bin/res"
+                      install -Dm644 "$src/platforms/freedesktop/dev.twilitrealm.dusk.desktop" \
+                        "$out/share/applications/dev.twilitrealm.dusk.desktop"
+                      for size in 16 32 48 64 128 256 512 1024; do
+                        install -Dm644 "$src/platforms/freedesktop/''${size}x''${size}/apps/dev.twilitrealm.dusk.png" \
+                          "$out/share/icons/hicolor/''${size}x''${size}/apps/dev.twilitrealm.dusk.png"
+                      done
+                      runHook postInstall
+                    '';
+
+                postFixup = lib.optionalString (!isDarwin) ''
+                  patchelf \
+                    --add-needed "${pkgs.vulkan-loader}/lib/libvulkan.so" \
+                    $out/bin/dusklight
                 '';
 
-            dontStrip = true;
+                dontStrip = true;
 
-            meta = {
-              description = "Dusklight — native PC port of the Twilight Princess decompilation";
-              homepage = "https://github.com/zeldaret/tp";
-              platforms = supportedSystems;
-              mainProgram = "dusklight";
-            };
-          };
+                meta = {
+                  description = "Dusklight — native PC port of the Twilight Princess decompilation";
+                  homepage = "https://github.com/zeldaret/tp";
+                  platforms = supportedSystems;
+                  mainProgram = "dusklight";
+                };
+              };
 
           # Tooling common to every supported host (Linux and macOS).
           commonDevTools = [

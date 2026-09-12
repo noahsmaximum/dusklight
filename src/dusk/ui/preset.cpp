@@ -21,6 +21,7 @@ void applyPresetClassic() {
     s.game.shadowResolutionMultiplier.setValue(1);
     s.game.hideTvSettingsScreen.setValue(false);
     s.game.menuScalingMode.setValue(MenuScaling::GameCube);
+    s.game.enableMenuPointer.setValue(false);
     AuroraSetViewportPolicy(AURORA_VIEWPORT_FIT);
 }
 
@@ -37,6 +38,7 @@ void applyPresetDusk() {
     s.game.invertCameraXAxis.setValue(true);
     s.game.invertFirstPersonYAxis.setValue(true);
     s.game.no2ndFishForCat.setValue(true);
+    s.game.buttonFishing.setValue(true);
     s.game.enableAchievementToasts.setValue(true);
     s.game.enableControllerToasts.setValue(true);
     s.game.enableQuickTransform.setValue(true);
@@ -52,30 +54,25 @@ void applyPresetDusk() {
     s.game.autoSave.setValue(true);
     s.game.menuScalingMode.setValue(MenuScaling::Dusklight);
     s.game.enhancedMapMenus.setValue(true);
+    s.game.enableMenuPointer.setValue(true);
 }
 
 }  // namespace
 
-PresetWindow::PresetWindow() : WindowSmall("modal", "modal-dialog") {
-    mDialog->SetClass("modal-dialog", true);
+PresetWindow::PresetWindow() : WindowSmall("modal") {
+    auto* header = append(mDialog, "modal-header");
 
-    auto* header = append(mDialog, "div");
-    header->SetClass("modal-header", true);
-
-    auto* title = append(header, "div");
-    title->SetClass("modal-title", true);
-    title->SetInnerRML("Welcome to Dusklight");
+    auto* title = append(header, "modal-title");
+    append_text(title, "Welcome to Dusklight");
 
     auto* headIcon = append(header, "icon");
     headIcon->SetClass("celebration", true);
 
-    auto* intro = append(mDialog, "div");
-    intro->SetClass("modal-body", true);
-    intro->SetInnerRML(
+    auto* intro = append(mDialog, "modal-body");
+    append_text(intro,
         "Choose a preset to get started. You can change any setting later from the Settings menu.");
 
-    auto* grid = append(mDialog, "div");
-    grid->SetClass("preset-grid", true);
+    auto* grid = append(mDialog, "preset-grid");
 
     struct PresetInfo {
         const char* name;
@@ -84,36 +81,39 @@ PresetWindow::PresetWindow() : WindowSmall("modal", "modal-dialog") {
     };
 
     static constexpr PresetInfo kPresets[] = {
-        {"Classic",
-         "Enhancements disabled to match the GameCube version. "
-         "Good for speedrunning or simple nostalgia!",
-         applyPresetClassic},
-        {"Dusklight",
-         "Graphics & quality of life tweaks, including some from the Wii U version. "
-         "Our recommended way to play!",
-         applyPresetDusk},
+        {
+            "Classic",
+            "Enhancements disabled to match the GameCube version. "
+            "Good for speedrunning or simple nostalgia!",
+            applyPresetClassic,
+        },
+        {
+            "Dusklight",
+            "Graphics & quality of life tweaks, including some from the Wii U version. "
+            "Our recommended way to play!",
+            applyPresetDusk,
+        },
     };
 
     for (const auto& preset : kPresets) {
-        auto* col = append(grid, "div");
-        col->SetClass("preset-col", true);
+        auto* col = append(grid, "preset-option");
 
         auto btn = std::make_unique<Button>(col, Rml::String(preset.name));
         btn->on_nav_command([this, apply = preset.apply](Rml::Event&, NavCommand cmd) {
             if (cmd == NavCommand::Confirm) {
                 apply();
                 getSettings().backend.wasPresetChosen.setValue(true);
-                config::Save();
+                config::save();
                 hide(true);
+                mDoAud_seStartMenu(kSoundClick);
                 return true;
             }
             return false;
         });
         mButtons.push_back(std::move(btn));
 
-        auto* desc = append(col, "div");
-        desc->SetClass("preset-desc", true);
-        desc->SetInnerRML(preset.desc);
+        auto* desc = append(col, "preset-description");
+        append_text(desc, preset.desc);
     }
 }
 

@@ -7,7 +7,7 @@
 
 #include "d/actor/d_a_obj_flag.h"
 
-daObjFlag_c::M_attrs const daObjFlag_c::M_attr = {
+DUSK_GAME_DATA daObjFlag_c::M_attrs const daObjFlag_c::M_attr = {
     4000.0f, 1.0f, 0.3f, 
     15, 2000, 1500, 4000, 
     1800, 0, 0, 1000, 400, 
@@ -297,7 +297,7 @@ static int daObjFlag_Create(fopAc_ac_c* param_0) {
 
 FlagJoint_c::FlagJoint_c() {}
 
-static actor_method_class l_daObjFlag_Method = {
+static DUSK_CONST actor_method_class l_daObjFlag_Method = {
     (process_method_func)daObjFlag_Create,
     (process_method_func)daObjFlag_Delete,
     (process_method_func)daObjFlag_Execute,
@@ -305,7 +305,7 @@ static actor_method_class l_daObjFlag_Method = {
     (process_method_func)daObjFlag_Draw,
 };
 
-actor_process_profile_definition g_profile_Obj_Flag = {
+DUSK_PROFILE actor_process_profile_definition DUSK_CONST g_profile_Obj_Flag = {
     /* Layer ID     */ fpcLy_CURRENT_e,
     /* List ID      */ 7,
     /* List Prio    */ fpcPi_CURRENT_e,

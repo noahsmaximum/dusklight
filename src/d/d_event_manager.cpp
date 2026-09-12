@@ -15,7 +15,9 @@
 #include "SSystem/SComponent/c_counter.h"
 #include <cstring>
 
-#include "dusk/string.hpp"
+#if TARGET_PC
+#include "helpers/string.hpp"
+#endif
 
 #if DEBUG
 static dEvM_HIO_c l_HIO;
@@ -330,11 +332,22 @@ int dEvent_manager_c::create() {
     return 1;
 }
 
-bool dEvent_manager_c::setObjectArchive(char* arcname) {
+bool dEvent_manager_c::setObjectArchive(DUSK_CONST char* arcname) {
     void* rt = NULL;
 
     if (arcname != NULL) {
         rt = dComIfG_getObjectRes(arcname, DataFileName);
+#if TARGET_PC
+        if (rt != nullptr && strcmp(arcname, "Prayer") == 0) {
+            // pointer to Prayer event `011get_item` prm0 in its event_list.dat
+            u8* itemNo = static_cast<u8*>(rt) + 0x927;
+            *itemNo =
+                dusk::mods::item_check("prayer_reward", dItemNo_KAKERA_HEART_e, NULL);
+            // set the proper item give tag
+            u32* prm1 = reinterpret_cast<u32*>(static_cast<u8*>(rt) + 0x928);
+            *prm1 = dusk::mods::item_give_tag("prayer_reward");
+        }
+#endif
         int base_status = mEventList[BASE_ACTOR].init((char*)rt, -1);
 
         #if DEBUG
@@ -920,7 +933,7 @@ s16 dEvent_manager_c::getEventIdx(fopAc_ac_c* actor, const char* eventName, u8 m
         dEvDtBase_c actor_event;
         if (type < BASE_ROOM0 || BASE_ROOM5 < type || actorRoomNo == mEventList[type].roomNo()) {
             if (actor != NULL && type == BASE_ACTOR) {
-                char* arcname = actor->eventInfo.getArchiveName();
+                DUSK_CONST char* arcname = actor->eventInfo.getArchiveName();
                 if (arcname != NULL) {
                     char* data = (char*)dComIfG_getObjectRes(arcname, DataFileName);
                     actor_event.init(data, -1);
@@ -1288,7 +1301,7 @@ int dEvent_manager_c::getEventPrio(fopAc_ac_c* actor, s16 evCompositId) {
     dEvDtBase_c eventBase;
 
     if (getTypeCompositId(evCompositId) == 2 && actor != NULL) {
-        char* arcname = actor->eventInfo.getArchiveName();
+        DUSK_CONST char* arcname = actor->eventInfo.getArchiveName();
         if (arcname != NULL) {
             char* data = (char*)dComIfG_getObjectRes(arcname, DataFileName);
             eventBase.init(data, -1);

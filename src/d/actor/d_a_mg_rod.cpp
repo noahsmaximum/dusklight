@@ -26,8 +26,10 @@
 #include <cstring>
 
 #if TARGET_PC
+#include "dusk/mods/item.hpp"
 #include "dusk/settings.h"
 #include "dusk/version.hpp"
+#include "mods/items.h"
 #endif
 
 class dmg_rod_HIO_c : public JORReflexible {
@@ -2911,7 +2913,17 @@ static void lure_heart(dmg_rod_class* i_this) {
             if (obj_life != NULL) {
                 fopAcM_delete(obj_life);
                 fopAcM_onItem(obj_life, 0x80);
+#if TARGET_PC
+                const auto itemCheck = dusk::mods::item_check_commit(
+                    ITEM_CHECK_FISHING_HEART_PIECE, dItemNo_KAKERA_HEART_e, actor);
+                if (itemCheck.itemNo == dItemNo_KAKERA_HEART_e) {
+                    execItemGet(dItemNo_KAKERA_HEART_e, itemCheck.tag, actor);
+                } else if (itemCheck.itemNo == dItemNo_NONE_e) {
+                    dusk::mods::item_check_complete(itemCheck, actor);
+                }
+#else
                 execItemGet(dItemNo_KAKERA_HEART_e);
+#endif
                 u8 eventReg = dComIfGs_getEventReg(0xECFF);
                 eventReg |= (u8)0x40;
                 dComIfGs_setEventReg(0xECFF, eventReg);
@@ -4046,7 +4058,15 @@ static void uki_catch(dmg_rod_class* i_this) {
             } else if (mgfish->mCaughtType == MG_CATCH_BIN) {
                 i_this->msgflow.init(actor, 0x139A, 0, NULL);
                 dComIfGs_onEventBit(dSv_event_flag_c::saveBitLabels[468]);
+#if TARGET_PC
+                const auto itemCheck = dusk::mods::item_check_commit(
+                    ITEM_CHECK_FISHING_BOTTLE, dItemNo_EMPTY_BOTTLE_e, actor);
+                if (itemCheck.itemNo == dItemNo_EMPTY_BOTTLE_e) {
+                    dComIfGs_setEmptyBottle();
+                }
+#else
                 dComIfGs_setEmptyBottle();
+#endif
             } else if (mgfish->mCaughtType == MG_CATCH_KN) {
                 i_this->msgflow.init(actor, 0x139C, 0, NULL);
             } else if (mgfish->mCaughtType == MG_CATCH_ED) {
@@ -4123,6 +4143,18 @@ static void uki_catch(dmg_rod_class* i_this) {
                 if (mgfish->mCaughtType == MG_CATCH_LH) {
                     dComIfGp_setItemRupeeCount(10.0f + cM_rndF(40.9f));
                 }
+#if TARGET_PC
+                else if (mgfish->mCaughtType == MG_CATCH_BIN)
+                {
+                    const auto itemCheck = dusk::mods::item_check_commit(
+                        ITEM_CHECK_FISHING_BOTTLE, dItemNo_EMPTY_BOTTLE_e, actor);
+                    if (itemCheck.itemNo == dItemNo_EMPTY_BOTTLE_e ||
+                        itemCheck.itemNo == dItemNo_NONE_e)
+                    {
+                        dusk::mods::item_check_complete(itemCheck, actor);
+                    }
+                }
+#endif
             } else {
                 dComIfGs_addFishNum(fish_kind);
                 if (i_this->field_0x14c0 != 0) {
@@ -5755,6 +5787,12 @@ static void play_camera_u(dmg_rod_class* i_this) {
     }
 }
 
+#if TARGET_PC
+BOOL item_any_fishing_rod(int itemId) {
+    return itemId == dItemNo_FISHING_ROD_1_e || (itemId >= dItemNo_BEE_ROD_e && itemId <= dItemNo_JEWEL_WORM_ROD_e);
+}
+#endif
+
 static int dmg_rod_Execute(dmg_rod_class* i_this) {
     fopAc_ac_c* actor = &i_this->actor;
 
@@ -5820,6 +5858,17 @@ static int dmg_rod_Execute(dmg_rod_class* i_this) {
 #endif
     i_this->prev_rod_substick_y = i_this->rod_substick_y;
     i_this->rod_substick_y = mDoCPd_c::getSubStickY(PAD_1);
+
+    #if TARGET_PC
+    if (dusk::getSettings().game.buttonFishing) {
+        if ((item_any_fishing_rod(dComIfGp_getSelectItem(0)) && mDoCPd_c::getHoldX(PAD_1)) ||
+            (item_any_fishing_rod(dComIfGp_getSelectItem(1)) && mDoCPd_c::getHoldY(PAD_1)) ||
+            (i_this->action == ACTION_LURE_STANDBY && mDoCPd_c::getTrigB(PAD_1))) {
+            i_this->rod_stick_y = -1.0f;
+            i_this->rod_substick_y = -1.0f;
+        }
+    }
+    #endif
 
     i_this->reel_speed = 5.0f;
     i_this->reel_btn_flags = mDoCPd_c::getHoldB(PAD_1) | mDoCPd_c::getHoldDown(PAD_1);
@@ -6464,7 +6513,7 @@ static int dmg_rod_Create(fopAc_ac_c* i_this) {
     return phase_state;
 }
 
-static actor_method_class l_dmg_rod_Method = {
+static DUSK_CONST actor_method_class l_dmg_rod_Method = {
     (process_method_func)dmg_rod_Create,
     (process_method_func)dmg_rod_Delete,
     (process_method_func)dmg_rod_Execute,
@@ -6472,7 +6521,7 @@ static actor_method_class l_dmg_rod_Method = {
     (process_method_func)dmg_rod_Draw,
 };
 
-actor_process_profile_definition g_profile_MG_ROD = {
+DUSK_PROFILE actor_process_profile_definition DUSK_CONST g_profile_MG_ROD = {
     /* Layer ID     */ fpcLy_CURRENT_e,
     /* List ID      */ 8,
     /* List Prio    */ fpcPi_CURRENT_e,

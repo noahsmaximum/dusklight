@@ -73,19 +73,19 @@ int daAlink_c::getReinRideDirection() {
     return DIR_RIGHT;
 }
 
-Vec const daAlink_c::m_handLeftOutSidePos = {
+DUSK_GAME_DATA Vec const daAlink_c::m_handLeftOutSidePos = {
     9.0f, -5.0f, 3.0f
 };
 
-Vec const daAlink_c::m_handRightOutSidePos = {
+DUSK_GAME_DATA Vec const daAlink_c::m_handRightOutSidePos = {
     9.0f, -5.0f, -3.0f
 };
 
-Vec const daAlink_c::m_handLeftInSidePos = {
+DUSK_GAME_DATA Vec const daAlink_c::m_handLeftInSidePos = {
     9.0f, 5.0f, 3.0f
 };
 
-Vec const daAlink_c::m_handRightInSidePos = {
+DUSK_GAME_DATA Vec const daAlink_c::m_handRightInSidePos = {
     9.0f, 5.0f, -3.0f
 };
 
@@ -340,18 +340,31 @@ void daAlink_c::setHorseStirrup() {
         mDoMtx_stack_c::copy(mpLinkModel->getAnmMtx(field_0x30bc));
         mDoMtx_stack_c::transM(-2.0f, -11.0f, 1.5f);       
         mDoMtx_stack_c::ZXYrotM(0, -0x8000, 0x4000);
+#if TARGET_PC
+        horse->m_model->setAnmMtx(0x17, mDoMtx_stack_c::get());
+#else
         mDoMtx_copy(mDoMtx_stack_c::get(), horse->getLeftStirrupMtx());
+#endif
     }
 
     if (field_0x2fab & 2) {
         mDoMtx_stack_c::copy(mpLinkModel->getAnmMtx(field_0x30be));
         mDoMtx_stack_c::transM(-2.0f, 11.0f, 1.5f);     
         mDoMtx_stack_c::ZrotM(-0x4000);
+#if TARGET_PC
+        horse->m_model->setAnmMtx(0x19, mDoMtx_stack_c::get());
+#else
         mDoMtx_copy(mDoMtx_stack_c::get(), horse->getRightStirrupMtx());
+#endif
     }
 
     if (field_0x2fab & 3) {
         horse->calcWeightEnvMtx();
+#if TARGET_PC
+        for (u16 i = 0; i < horse->m_model->getModelData()->getWEvlpMtxNum(); i++) {
+            dusk::interp::record_final_mtx(horse->m_model->getWeightAnmMtx(i));
+        }
+#endif
     }
 
     int hand_type = getReinHandType();
@@ -1270,7 +1283,7 @@ int daAlink_c::procHorseRideInit() {
 
     daAlink_ANM anm;
     MtxP rideMtx;
-    Vec* localRidePos_p;
+    Vec DUSK_CONST* localRidePos_p;
     u32 mode;
     if (fopAcM_GetName(field_0x27f4) == fpcNm_HORSE_e) {
         daHorse_c* horse = (daHorse_c*)field_0x27f4;
